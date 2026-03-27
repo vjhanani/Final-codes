@@ -1,6 +1,7 @@
 // server.js
 
 require("dotenv").config();
+require("./utils/monthlyJob");
 
 const app = require("./app");
 const sequelize = require("./config/db");

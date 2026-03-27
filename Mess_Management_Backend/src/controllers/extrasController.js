@@ -67,6 +67,15 @@ exports.getAllExtras = async (req, res) => {
     const today = days[new Date().getDay()];
     const currentMeal = getCurrentMeal();
 
+    if (req.user && req.user.role === "manager") {
+      const items = await ExtraItem.findAll();
+      return res.json({
+        day: today,
+        mealType: currentMeal,
+        items
+      });
+    }
+
     const items = await ExtraItem.findAll({
       where: {
         isAvailable: true,

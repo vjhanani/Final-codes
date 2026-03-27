@@ -26,3 +26,14 @@ exports.sendOTPEmail = async (email, otp) => {
 
   await transporter.sendMail(mailOptions);
 };
+
+const sendMail = async (to, subject, html) => {
+  await transporter.sendMail({
+    from: `"Mess Automation" <${process.env.EMAIL_USER}>`,
+    to,
+    subject,
+    html,
+  });
+};
+
+module.exports = { sendMail };
