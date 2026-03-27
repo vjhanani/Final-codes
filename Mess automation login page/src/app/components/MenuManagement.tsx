@@ -158,7 +158,7 @@ export function MenuManagement() {
   };
 
   const renderDailyMenu = () => (
-    <div className="space-y-4">
+    <div className="space-y-4 w-250">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold">Weekly Menu</h3>
         <button className="flex items-center gap-2 px-4 py-2 border-2 border-black hover:bg-gray-100">

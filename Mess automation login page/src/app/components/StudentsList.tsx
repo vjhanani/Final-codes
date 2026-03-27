@@ -110,7 +110,7 @@ export function StudentsList() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-250">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">All Students</h2>
         <button className="flex items-center gap-2 px-4 py-2 bg-black text-white hover:bg-gray-800">
