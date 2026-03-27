@@ -73,7 +73,7 @@ export function RebateRequests() {
   const processedRequests = requests.filter((r) => r.status !== 'pending');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-250">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Rebate Requests</h2>
         <div className="flex gap-4 text-sm">
