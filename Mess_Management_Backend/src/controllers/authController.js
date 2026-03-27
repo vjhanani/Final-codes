@@ -301,3 +301,80 @@ exports.updateProfile = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// 1. Request Password Reset OTP
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email, role } = req.body;
+    let user;
+
+    // Check if user exists based on role
+    if (role === "student") {
+      user = await Student.findOne({ where: { email } });
+    } else {
+      user = await MessManager.findOne({ where: { email } });
+    }
+
+    if (!user) {
+      return res.status(404).json({ error: "User with this email not found" });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000);
+
+    // Store in otpStore (Reuse existing store)
+    otpStore[email] = {
+      otp,
+      role, // Store role to know which table to update later
+      type: "password_reset",
+      expires: Date.now() + 5 * 60 * 1000 // 5 minutes
+    };
+
+    const { sendOTPEmail } = require("../utils/mailer");
+    await sendOTPEmail(email, otp);
+
+    res.json({ message: "Reset OTP sent to your email" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// 2. Reset Password using OTP
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    const record = otpStore[email];
+
+    // Validations
+    if (!record || record.type !== "password_reset") {
+      return res.status(400).json({ error: "No reset request found" });
+    }
+
+    if (record.expires < Date.now()) {
+      delete otpStore[email];
+      return res.status(400).json({ error: "OTP expired" });
+    }
+
+    if (record.otp != otp) {
+      return res.status(400).json({ error: "Invalid OTP" });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the correct table based on stored role
+    if (record.role === "student") {
+      await Student.update({ password: hashedPassword }, { where: { email } });
+    } else {
+      await MessManager.update({ password: hashedPassword }, { where: { email } });
+    }
+
+    // Clean up store
+    delete otpStore[email];
+
+    res.json({ message: "Password reset successful. You can now login." });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

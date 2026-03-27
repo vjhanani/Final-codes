@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, AlertCircle } from 'lucide-react';
+import { Calendar, AlertCircle, Trash2 } from 'lucide-react';
 
 interface RebateRequest {
   id?: string;
@@ -14,6 +14,7 @@ export function RequestRebate() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [previousRequests, setPreviousRequests] = useState<RebateRequest[]>([]);
 
@@ -37,6 +38,8 @@ export function RequestRebate() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (isSubmitting) return;
+
     if (!startDate || !endDate) {
       alert('Please select both start and end dates');
       return;
@@ -56,6 +59,7 @@ export function RequestRebate() {
     }
 
     try {
+      setIsSubmitting(true);
       const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:5000/api/rebate', {
         method: 'POST',
@@ -81,6 +85,29 @@ export function RequestRebate() {
       }
     } catch (err) {
       alert('Backend unreachable');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string | undefined) => {
+    if (!id) return;
+    if (!confirm('Are you sure you want to cancel this rebate request?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:5000/api/rebate/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setPreviousRequests(previousRequests.filter(r => r.id !== id));
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to delete rebate');
+      }
+    } catch {
+      alert('Network error');
     }
   };
 
@@ -192,9 +219,12 @@ export function RequestRebate() {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-gray-800 text-white py-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors"
+            disabled={isSubmitting}
+            className={`w-full py-3 rounded-lg font-semibold text-white transition-colors ${
+              isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-800 hover:bg-gray-700'
+            }`}
           >
-            Submit Rebate Request
+            {isSubmitting ? 'Submitting...' : 'Submit Rebate Request'}
           </button>
         </form>
       </div>
@@ -225,17 +255,28 @@ export function RequestRebate() {
                       Submitted on {formatDate(request.createdAt)}
                     </p>
                   </div>
-                  <span
-                    className={`px-3 py-1 text-sm rounded-full font-semibold ${
-                      request.status === 'Approved'
-                        ? 'bg-green-100 text-green-800'
-                        : request.status === 'Rejected'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}
-                  >
-                    {request.status}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span
+                      className={`px-3 py-1 text-sm rounded-full font-semibold ${
+                        request.status === 'Approved'
+                          ? 'bg-green-100 text-green-800'
+                          : request.status === 'Rejected'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}
+                    >
+                      {request.status}
+                    </span>
+                    {request.status === 'Pending' && (
+                      <button
+                        onClick={() => handleDelete(request.id)}
+                        className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-full transition-colors flex items-center justify-center mt-1"
+                        title="Delete Request"
+                      >
+                        <Trash2 className="w-4 h-4 cursor-pointer" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
