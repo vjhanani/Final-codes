@@ -2,6 +2,7 @@
 
 const Poll = require("../models/Poll");
 const PollOption = require("../models/PollOption");
+const Vote = require("../models/Vote");
 
 
 exports.createPoll = async (req, res) => {
@@ -11,6 +12,19 @@ exports.createPoll = async (req, res) => {
     }
 
     const { title, description, options } = req.body;
+
+    // Check if a similar active or scheduled poll already exists
+    const existingPoll = await Poll.findOne({
+      where: {
+        title,
+        description,
+        status: ["active", "scheduled"]
+      }
+    });
+
+    if (existingPoll) {
+      return res.status(400).json({ error: "An active or scheduled poll with the same title and description already exists" });
+    }
 
     const poll = await Poll.create({
       title,
@@ -111,6 +125,25 @@ exports.getAllPolls = async (req, res) => {
     });
 
     res.json(polls);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.deletePoll = async (req, res) => {
+  try {
+    if (req.user.role !== "manager") {
+      return res.status(403).json({ error: "Only manager allowed" });
+    }
+
+    const poll = await Poll.findByPk(req.params.id);
+    if (!poll) return res.status(404).json({ error: "Poll not found" });
+
+    await Vote.destroy({ where: { PollId: req.params.id } });
+    await PollOption.destroy({ where: { PollId: req.params.id } });
+    await poll.destroy();
+
+    res.json({ message: "Poll deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

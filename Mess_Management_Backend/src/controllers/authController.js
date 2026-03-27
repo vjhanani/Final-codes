@@ -276,3 +276,28 @@ exports.getProfile = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.updateProfile = async (req, res) => {
+  try {
+    if (req.user.role !== "student") {
+      return res.status(403).json({ error: "Only students allowed to update this profile" });
+    }
+
+    const { name, roomNo, phone } = req.body;
+    const student = await Student.findByPk(req.user.rollNo);
+
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+    if (name) student.name = name;
+    if (roomNo !== undefined) student.roomNo = roomNo;
+    if (phone !== undefined) student.phone = phone;
+
+    await student.save();
+
+    res.json({ message: "Profile updated successfully", student });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

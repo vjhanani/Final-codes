@@ -9,6 +9,7 @@ export function Dashboard() {
     dinner: [],
   });
   const [extraTotal, setExtraTotal] = useState(0);
+  const [bdmr, setBdmr] = useState<number | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -54,8 +55,27 @@ export function Dashboard() {
       }
     };
 
+    const fetchBDMR = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const date = new Date();
+        const configKey = `BDMR_${date.getFullYear()}_${date.getMonth() + 1}`;
+        const res = await fetch(`http://localhost:5000/api/config/${configKey}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.value) setBdmr(Number(data.value));
+        }
+      } catch (err) {
+        console.error('Failed to fetch BDMR', err);
+      }
+    };
+
     fetchTodayMenu();
     fetchExtrasTotal();
+    fetchBDMR();
   }, []);
 
   const formatDate = (date: Date) => {
@@ -165,14 +185,18 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Extras Summary */}
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
-        <h3 className="text-xl font-bold mb-4 text-gray-800 pb-3 border-b border-gray-200">
-          Extras Purchased (This Month)
-        </h3>
-        <div className="text-center py-8">
-          <p className="text-sm text-gray-600 mb-2">Total Extras Spent</p>
-          <p className="text-5xl font-bold text-gray-800">₹{extraTotal}</p>
+      {/* Financial Overview */}
+      <h2 className="text-2xl font-bold mb-6 mt-8 border-b-2 border-gray-800 text-gray-800 pb-3">
+        Monthly Overview
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-8">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 flex flex-col items-center justify-center">
+          <p className="text-sm text-gray-600 mb-2">Total Extras Spent (This Month)</p>
+          <p className="text-5xl font-bold text-orange-600">₹{extraTotal}</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 flex flex-col items-center justify-center">
+          <p className="text-sm text-gray-600 mb-2">Current BDMR Rate</p>
+          <p className="text-5xl font-bold text-blue-600">{bdmr ? `₹${bdmr}/day` : 'Not Set'}</p>
         </div>
       </div>
     </div>

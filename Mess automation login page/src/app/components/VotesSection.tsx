@@ -75,7 +75,7 @@ export function VotesSection() {
               </div>
 
               <div className="space-y-3">
-                {(poll.PollOptions || []).map((opt) => {
+                {[...(poll.PollOptions || [])].sort((a, b) => b.votes - a.votes).map((opt) => {
                   const percentage = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0;
                   return (
                     <div key={opt.id}>

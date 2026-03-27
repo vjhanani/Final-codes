@@ -15,8 +15,10 @@ router.post("/create", protect, allowRoles("manager"), pollController.createPoll
 router.put("/start/:id", protect, allowRoles("manager"), pollController.startPoll);
 router.put("/end/:id", protect, allowRoles("manager"), pollController.endPoll);
 router.put("/update/:id", protect, allowRoles("manager"), pollController.updatePollOptions);
+router.delete("/:id", protect, allowRoles("manager"), pollController.deletePoll);
 
 // student
+router.get("/my", protect, allowRoles("student"), voteController.getMyVotes);
 router.post("/vote", protect, allowRoles("student"), voteController.castVote);
 
 // both

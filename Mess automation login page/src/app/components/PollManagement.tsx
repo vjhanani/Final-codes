@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Play, Square, BarChart3 } from 'lucide-react';
+import { Plus, Play, Square, BarChart3, Trash2 } from 'lucide-react';
 
 interface PollOption {
   id: number;
@@ -20,6 +20,7 @@ interface Poll {
 
 export function PollManagement() {
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [polls, setPolls] = useState<Poll[]>([]);
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
@@ -48,6 +49,8 @@ export function PollManagement() {
   }, []);
 
   const handleCreatePoll = async () => {
+    if (isCreating) return;
+    setIsCreating(true);
     try {
       const token = localStorage.getItem('token');
       const options: Record<string, string[]> = {};
@@ -71,6 +74,8 @@ export function PollManagement() {
       }
     } catch {
       alert('Network error');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -94,6 +99,25 @@ export function PollManagement() {
       });
       if (res.ok) fetchPolls();
     } catch { /* */ }
+  };
+
+  const deletePoll = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this poll? This action cannot be undone.')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:5000/api/poll/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchPolls();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to delete poll');
+      }
+    } catch {
+      alert('Network error');
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -149,7 +173,9 @@ export function PollManagement() {
                 className="w-full px-3 py-2 border-2 border-black focus:outline-none" rows={3} placeholder="Option 1&#10;Option 2" />
             </div>
             <div className="flex gap-3 pt-4 border-t border-gray-200">
-              <button onClick={handleCreatePoll} className="px-6 py-2 bg-black text-white hover:bg-gray-800">Create Poll</button>
+              <button onClick={handleCreatePoll} disabled={isCreating} className={`px-6 py-2 text-white ${isCreating ? 'bg-gray-500 cursor-not-allowed' : 'bg-black hover:bg-gray-800'}`}>
+                {isCreating ? 'Creating...' : 'Create Poll'}
+              </button>
               <button onClick={() => setShowCreateForm(false)} className="px-6 py-2 border-2 border-black hover:bg-gray-100">Cancel</button>
             </div>
           </div>
@@ -201,7 +227,7 @@ export function PollManagement() {
               {/* Poll Options grouped by mealType */}
               {(poll.PollOptions || []).length > 0 && (
                 <div className="space-y-2 mb-4">
-                  {(poll.PollOptions || []).map((opt) => {
+                  {[...(poll.PollOptions || [])].sort((a, b) => b.votes - a.votes).map((opt) => {
                     const percentage = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0;
                     return (
                       <div key={opt.id}>
@@ -219,19 +245,25 @@ export function PollManagement() {
               )}
 
               {/* Actions */}
-              <div className="flex gap-2 pt-4 border-t border-gray-200">
-                {poll.status === 'active' && (
-                  <button onClick={() => endPoll(poll.id)}
-                    className="flex items-center gap-2 px-3 py-2 border-2 border-black hover:bg-gray-100 text-sm">
-                    <Square className="w-4 h-4" /> End Poll
-                  </button>
-                )}
-                {poll.status === 'scheduled' && (
-                  <button onClick={() => startPoll(poll.id)}
-                    className="flex items-center gap-2 px-3 py-2 bg-black text-white text-sm">
-                    <Play className="w-4 h-4" /> Start Now
-                  </button>
-                )}
+              <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                <div className="flex gap-2">
+                  {poll.status === 'active' && (
+                    <button onClick={() => endPoll(poll.id)}
+                      className="flex items-center gap-2 px-3 py-2 border-2 border-black hover:bg-gray-100 text-sm">
+                      <Square className="w-4 h-4" /> End Poll
+                    </button>
+                  )}
+                  {poll.status === 'scheduled' && (
+                    <button onClick={() => startPoll(poll.id)}
+                      className="flex items-center gap-2 px-3 py-2 bg-black text-white text-sm">
+                      <Play className="w-4 h-4" /> Start Now
+                    </button>
+                  )}
+                </div>
+                <button onClick={() => deletePoll(poll.id)}
+                  className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 border border-transparent hover:border-red-600 rounded text-sm transition-colors">
+                  <Trash2 className="w-4 h-4" /> Delete
+                </button>
               </div>
             </div>
           );

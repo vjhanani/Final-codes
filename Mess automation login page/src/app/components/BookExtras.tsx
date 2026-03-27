@@ -16,7 +16,7 @@ interface PreBookItem {
   price: number;
   meal: 'breakfast' | 'lunch' | 'dinner';
   date: string;
-  booked: boolean;
+  quantity: number;
 }
 
 export function BookExtras() {
@@ -56,6 +56,17 @@ export function BookExtras() {
 
   // ✅ PRE-BOOK STATE
   const [preBookings, setPreBookings] = useState<any[]>([]);
+  const [myBookings, setMyBookings] = useState<any[]>([]);
+
+  const fetchMyBookings = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/api/pre-booking/my', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) setMyBookings(await res.json());
+    } catch { /* */ }
+  };
 
   useEffect(() => {
     const fetchSpecialItems = async () => {
@@ -70,12 +81,15 @@ export function BookExtras() {
           setPreBookings(data.map((item: any) => ({
              ...item,
              dishName: item.name,
-             booked: false
+             quantity: 0
           })));
         }
       } catch (err) { /* */ }
     };
-    if (activeSection === 'prebook') fetchSpecialItems();
+    if (activeSection === 'prebook') {
+      fetchSpecialItems();
+      fetchMyBookings();
+    }
   }, [activeSection]);
 
   // 🔹 CART + STOCK LOGIC
@@ -150,24 +164,38 @@ export function BookExtras() {
   };
 
   // 🔹 PRE-BOOK LOGIC — UNCHANGED
-  const togglePreBooking = (index: number) => {
+  const incrementPreBook = (index: number) => {
     setPreBookings(prev =>
       prev.map((item, i) =>
-        i === index ? { ...item, booked: !item.booked } : item
+        i === index ? { ...item, quantity: (item.quantity || 0) + 1 } : item
+      )
+    );
+  };
+
+  const decrementPreBook = (index: number) => {
+    setPreBookings(prev =>
+      prev.map((item, i) =>
+        i === index && item.quantity > 0 ? { ...item, quantity: item.quantity - 1 } : item
       )
     );
   };
 
   const handlePreBookSubmit = async () => {
-    const bookedItems = preBookings.filter(item => item.booked);
-    if (bookedItems.length === 0) {
+    const itemsToBook: PreBookItem[] = [];
+    preBookings.forEach(item => {
+      for(let i=0; i < (item.quantity || 0); i++) {
+         itemsToBook.push(item);
+      }
+    });
+
+    if (itemsToBook.length === 0) {
       alert('Please select at least one item to pre-book');
       return;
     }
     
     try {
       const token = localStorage.getItem('token');
-      for (const item of bookedItems) {
+      for (const item of itemsToBook) {
         await fetch('http://localhost:5000/api/pre-booking', {
           method: 'POST',
           headers: {
@@ -183,8 +211,9 @@ export function BookExtras() {
         });
       }
 
-      alert(`Successfully pre-booked ${bookedItems.length} items!`);
-      setPreBookings(prev => prev.map(item => ({ ...item, booked: false })));
+      alert(`Successfully placed ${itemsToBook.length} pre-bookings!`);
+      setPreBookings(prev => prev.map(item => ({ ...item, quantity: 0 })));
+      fetchMyBookings();
     } catch (err) {
       alert("Failed to connect to backend for pre-booking");
     }
@@ -322,22 +351,52 @@ export function BookExtras() {
                 <h3 className="text-xl font-bold mb-4">{title}</h3>
                 {items.map((item, index) => {
                   const globalIndex = preBookings.findIndex(p => p === item);
+                  const matchingBookings = myBookings.filter(b => b.SpecialItemId === parseInt(item.id) && b.date === item.date);
+
                   return (
-                    <div key={index} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg mb-2">
-                      <div className="flex flex-col">
-                        <span className="font-bold">{item.dishName}</span>
-                        <span className="text-xs text-gray-500">Price: ₹{item.price} | Date: {item.date}</span>
+                    <div key={index} className="mb-4">
+                      <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex flex-col">
+                          <span className="font-bold">{item.dishName}</span>
+                          <span className="text-xs text-gray-500">Price: ₹{item.price} | Date: {item.date}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {item.quantity > 0 ? (
+                            <div className="flex items-center gap-3">
+                              <button onClick={() => decrementPreBook(globalIndex)} className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors">
+                                <Minus className="w-4 h-4" />
+                              </button>
+                              <span className="font-semibold w-4 text-center">{item.quantity}</span>
+                              <button onClick={() => incrementPreBook(globalIndex)} className="w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors">
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => incrementPreBook(globalIndex)}
+                              className="px-6 py-2 rounded-lg font-semibold bg-gray-800 text-white hover:bg-gray-700 transition-colors"
+                            >
+                              Add
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <button
-                        onClick={() => togglePreBooking(globalIndex)}
-                        className={`px-4 py-2 rounded-lg font-semibold ${
-                          item.booked
-                            ? 'bg-green-600 text-white'
-                            : 'bg-gray-800 text-white'
-                        }`}
-                      >
-                        {item.booked ? 'Booked ✓' : 'Book'}
-                      </button>
+                      
+                      {matchingBookings.length > 0 && (
+                        <div className="mt-2 space-y-2">
+                          {matchingBookings.map((b, idx) => (
+                            <div key={idx} className="ml-4 pl-4 py-2 border-l-4 border-green-500 bg-green-50/50 rounded-r-lg flex justify-between items-center text-sm shadow-sm hover:shadow transition-shadow">
+                              <div>
+                                <span className="text-green-800 font-medium">✓ Confirmed Pre-booking</span>
+                                <span className="text-xs text-gray-500 ml-2 capitalize">({b.status})</span>
+                              </div>
+                              <span className="text-xs text-gray-400 pr-2">
+                                {new Date(b.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -348,7 +407,7 @@ export function BookExtras() {
           <div className="bg-white border rounded-lg p-6 shadow-sm">
             <button
               onClick={handlePreBookSubmit}
-              className="w-full bg-gray-800 text-white py-4 rounded-lg font-semibold"
+              className="w-full bg-gray-800 text-white py-4 rounded-lg font-semibold hover:bg-gray-700 active:bg-gray-900 transition-colors"
             >
               Confirm Pre-bookings for Tomorrow
             </button>

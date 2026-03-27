@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
 import { Dashboard } from '@/app/components/Dashboard';
 import { Profile } from '@/app/components/Profile';
 import { BookExtras } from '@/app/components/BookExtras';
@@ -8,7 +10,14 @@ import { Feedback } from '@/app/components/Feedback';
 import { RequestRebate } from '@/app/components/RequestRebate';
 
 export default function StudentDashboard() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/');
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -46,6 +55,14 @@ export default function StudentDashboard() {
               <p className="text-sm text-gray-600">IIT Kanpur</p>
             </div>
           </div>
+          
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm"
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
         </div>
       </header>
 

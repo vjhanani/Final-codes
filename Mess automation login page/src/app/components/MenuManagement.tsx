@@ -181,14 +181,14 @@ export function MenuManagement() {
                 <>
                   <button
                     onClick={() => handleSaveMenu(menu.day)}
-                    className="flex items-center gap-2 px-3 py-2 bg-black text-white"
+                    className="flex items-center gap-2 px-3 py-2 bg-black text-white hover:bg-gray-800 transition-colors"
                   >
                     <Save className="w-4 h-4" />
                     Save
                   </button>
                   <button
                     onClick={() => setEditingDay(null)}
-                    className="flex items-center gap-2 px-3 py-2 border-2 border-black"
+                    className="flex items-center gap-2 px-3 py-2 border-2 border-black hover:bg-gray-100 transition-colors"
                   >
                     <X className="w-4 h-4" />
                     Cancel
@@ -318,7 +318,7 @@ export function MenuManagement() {
             </select>
             <input type="date" value={newSpecialDate} onChange={e => setNewSpecialDate(e.target.value)} className="p-2 border border-black" />
           </div>
-          <button onClick={handleCreateSpecial} className="px-6 py-2 bg-black text-white">Create Pre-booking Item</button>
+          <button onClick={handleCreateSpecial} className="px-6 py-2 bg-black text-white hover:bg-gray-800 transition-colors">Create Pre-booking Item</button>
         </div>
       </div>
 
@@ -465,7 +465,7 @@ export function MenuManagement() {
                     fetchExtras();
                     setShowAddItemForm(false);
                 }}
-                className="px-6 py-2 bg-black text-white"
+                className="px-6 py-2 bg-black text-white hover:bg-gray-800 transition-colors"
               >
                 Add to Inventory
               </button>

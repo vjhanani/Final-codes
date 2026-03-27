@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Users,
   MessageSquare,
@@ -8,7 +9,8 @@ import {
   BarChart3,
   FileText,
   CheckCircle,
-  UserPlus
+  UserPlus,
+  LogOut
 } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
 import { VotesSection } from '../components/VotesSection';
@@ -21,8 +23,21 @@ import { PollManagement } from '../components/PollManagement';
 import { NewPersonRequests } from '../components/NewPersonRequests';
 
 export default function ManagerDashboard() {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/');
+  };
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -56,7 +71,7 @@ export default function ManagerDashboard() {
         return <PollManagement />;
       case 'dashboard':
       default:
-        return <DashboardOverview />;
+        return <DashboardOverview onNavigate={setActiveSection} />;
     }
   };
 
@@ -81,10 +96,18 @@ export default function ManagerDashboard() {
           </div>
         </div>
 
-        <div className="ml-auto text-sm">
-          <p className="font-medium">{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
-          <p className="text-xs text-gray-600">{new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
+        <div className="ml-auto text-sm text-right pr-4 border-r border-gray-300">
+          <p className="font-medium">{currentTime.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          <p className="text-xs text-gray-600">{currentTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
         </div>
+
+        <button 
+          onClick={handleLogout}
+          className="ml-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors flex items-center gap-2 text-sm font-medium"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </button>
       </header>
 
       <div className="pt-16 flex">
@@ -105,7 +128,7 @@ export default function ManagerDashboard() {
   );
 }
 
-function DashboardOverview() {
+function DashboardOverview({ onNavigate }: { onNavigate: (section: string) => void }) {
   const [stats, setStats] = useState({
     totalStudents: '0',
     pendingRebates: '0',
@@ -168,13 +191,13 @@ function DashboardOverview() {
       <div className="border-2 border-black p-6">
         <h3 className="text-lg font-bold mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="border-2 border-black p-4 hover:bg-black hover:text-white transition-colors">
+          <button onClick={() => onNavigate('menu')} className="border-2 border-black p-4 hover:bg-black hover:text-white transition-colors">
             Update Daily Menu
           </button>
-          <button className="border-2 border-black p-4 hover:bg-black hover:text-white transition-colors">
+          <button onClick={() => onNavigate('polls')} className="border-2 border-black p-4 hover:bg-black hover:text-white transition-colors">
             Create New Poll
           </button>
-          <button className="border-2 border-black p-4 hover:bg-black hover:text-white transition-colors">
+          <button onClick={() => onNavigate('feedback')} className="border-2 border-black p-4 hover:bg-black hover:text-white transition-colors">
             View Feedback
           </button>
         </div>

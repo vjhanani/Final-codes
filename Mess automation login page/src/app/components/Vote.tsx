@@ -28,13 +28,42 @@ export function Vote() {
       try {
         const token = localStorage.getItem('token');
         if (!token) return;
+        
         const res = await fetch('http://localhost:5000/api/poll', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (res.ok) {
-          const data = await res.json();
-          setPolls(data);
+        if (!res.ok) return;
+        
+        const pollsData = await res.json();
+        setPolls(pollsData);
+
+        const myRes = await fetch('http://localhost:5000/api/poll/my', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (myRes.ok) {
+          const myVotes = await myRes.json();
+          
+          const initialSelections: Record<number, Record<string, number>> = {};
+          const initialVoted = new Set<number>();
+
+          myVotes.forEach((vote: any) => {
+            const pollId = vote.PollId;
+            initialVoted.add(pollId);
+            
+            const poll = pollsData.find((p: PollData) => p.id === pollId);
+            if (poll) {
+              const option = poll.PollOptions?.find((o: PollOption) => o.id === vote.PollOptionId);
+              if (option) {
+                if (!initialSelections[pollId]) initialSelections[pollId] = {};
+                initialSelections[pollId][option.mealType] = option.id;
+              }
+            }
+          });
+
+          setSelections(initialSelections);
+          setVotedPolls(initialVoted);
         }
+
       } catch (err) {
         console.error('Failed to fetch polls', err);
       }
@@ -52,9 +81,14 @@ export function Vote() {
   const handleSubmitVote = async (pollId: number) => {
     try {
       const token = localStorage.getItem('token');
-      const pollSelections = selections[pollId];
-      if (!pollSelections || !pollSelections.Breakfast || !pollSelections.Lunch || !pollSelections.Dinner) {
-        alert('Please select one option for Breakfast, Lunch, AND Dinner!');
+      const poll = polls.find(p => p.id === pollId);
+      const availableMealTypes = Array.from(new Set((poll?.PollOptions || []).map(opt => opt.mealType)));
+      
+      const pollSelections = selections[pollId] || {};
+      const missingMeals = availableMealTypes.filter(meal => !pollSelections[meal]);
+
+      if (missingMeals.length > 0) {
+        alert(`Please select one option for: ${missingMeals.join(', ')}`);
         return;
       }
 
@@ -65,7 +99,8 @@ export function Vote() {
       });
 
       if (res.ok) {
-        alert('Vote submitted successfully!');
+        const data = await res.json();
+        alert(data.message || 'Vote processed successfully!');
         setVotedPolls(prev => new Set(prev).add(pollId));
       } else {
         const err = await res.json();
@@ -137,14 +172,14 @@ export function Vote() {
                   <div key={mealType} className="mb-4">
                     <h5 className="font-bold text-gray-700 mb-2 border-b pb-1">{mealType}</h5>
                     <div className="space-y-2">
-                      {opts.map(opt => {
+                      {[...opts].sort((a, b) => b.votes - a.votes).map(opt => {
                         const isSelected = selections[poll.id]?.[mealType] === opt.id;
                         return (
                           <div key={opt.id}
                             className={`border rounded-lg p-3 flex items-center justify-between cursor-pointer transition ${
                               isSelected ? 'border-gray-800 bg-gray-100' : 'border-gray-200 hover:bg-gray-50'
-                            } ${hasVoted ? 'cursor-default' : ''}`}
-                            onClick={() => !hasVoted && handleSelect(poll.id, mealType, opt.id)}
+                            }`}
+                            onClick={() => handleSelect(poll.id, mealType, opt.id)}
                           >
                             <div className="flex items-center gap-3">
                               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
@@ -162,14 +197,17 @@ export function Vote() {
                   </div>
                 ))}
 
-                {!hasVoted && (
-                  <button
-                    onClick={() => handleSubmitVote(poll.id)}
-                    className="w-full mt-2 px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 font-semibold"
-                  >
-                    <ThumbsUp className="w-5 h-5" /> Submit Vote
-                  </button>
+                {hasVoted && (
+                  <div className="mt-2 mb-3 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-sm text-center">
+                    You have already voted on this poll, but you can change your selection above.
+                  </div>
                 )}
+                <button
+                  onClick={() => handleSubmitVote(poll.id)}
+                  className="w-full mt-2 px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 font-semibold"
+                >
+                  <ThumbsUp className="w-5 h-5" /> {hasVoted ? 'Update Vote' : 'Submit Vote'}
+                </button>
 
                 <div className="mt-3 text-center text-sm text-gray-500">Total votes: {totalVotes}</div>
               </div>
@@ -189,7 +227,7 @@ export function Vote() {
                 <h4 className="text-xl font-bold mb-2">{poll.title}</h4>
                 <p className="text-gray-600 mb-3">{poll.description}</p>
                 <div className="space-y-2">
-                  {(poll.PollOptions || []).map(opt => {
+                  {[...(poll.PollOptions || [])].sort((a, b) => b.votes - a.votes).map(opt => {
                     const pct = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0;
                     return (
                       <div key={opt.id} className="flex items-center justify-between p-3 bg-white rounded">
