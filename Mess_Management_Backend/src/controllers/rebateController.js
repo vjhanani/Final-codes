@@ -45,7 +45,6 @@ exports.applyRebate = async (req, res) => {
     const overlap = await Rebate.findOne({
       where: {
         StudentRollNo: req.user.rollNo,
-        status: "Approved",
         startDate: {
           [Op.lte]: endDate
         },
@@ -57,7 +56,7 @@ exports.applyRebate = async (req, res) => {
 
     if (overlap) {
       return res.status(400).json({
-        error: "Rebate overlaps with already approved request"
+        error: "Rebate request interval overlaps with previous request"
       });
     }
 
