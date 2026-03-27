@@ -25,6 +25,10 @@ export function LoginForm() {
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [statusMessage, setStatusMessage] = useState('');
+  
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetStep, setResetStep] = useState<1 | 2>(1);
+  const [newPassword, setNewPassword] = useState('');
 
   const fetchWithTimeout = async (url: string, options: any, timeout = 30000) => {
     const controller = new AbortController();
@@ -166,11 +170,60 @@ export function LoginForm() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    try {
+      if (!email) {
+        alert("Please enter your email");
+        return;
+      }
+      const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, role }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        alert("OTP sent to your email!");
+        setResetStep(2);
+      } else {
+        alert(data.error || "Failed to send OTP");
+      }
+    } catch (e) {
+      alert("Backend unreachable");
+    }
+  };
+
+  const handleResetPassword = async () => {
+    try {
+      if (!otp || !newPassword) {
+        alert("Please enter OTP and new password.");
+        return;
+      }
+      const response = await fetch('http://localhost:5000/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp, newPassword }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        alert("Password reset successfully. You can now login.");
+        resetMode(true);
+      } else {
+        alert(data.error || "Failed to reset password");
+      }
+    } catch (e) {
+      alert("Backend unreachable");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
 
-    if (isLogin) {
+    if (isForgotPassword) {
+      if (resetStep === 1) await handleForgotPassword();
+      else await handleResetPassword();
+    } else if (isLogin) {
       await handleLogin();
     } else {
       await handleRegister();
@@ -184,6 +237,10 @@ export function LoginForm() {
     setShowOtpInput(false);
     setShowWebcam(true);
     setScanProgress(0);
+    setIsForgotPassword(false);
+    setResetStep(1);
+    setNewPassword('');
+    setOtp('');
   }
 
   return (
@@ -209,6 +266,38 @@ export function LoginForm() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {isForgotPassword ? (
+              <div className="space-y-4">
+                <div className="flex gap-2 mb-4 bg-gray-50 p-1 rounded-lg">
+                  <div className="flex-1 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Forgot Password</div>
+                </div>
+                {resetStep === 1 ? (
+                  <>
+                    <p className="text-sm text-gray-600">Enter your email and role to receive an OTP.</p>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none" placeholder="email@iitk.ac.in" required />
+                    <select value={role} onChange={(e) => setRole(e.target.value as any)} className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white outline-none">
+                        <option value="student">Student</option>
+                        <option value="manager">Manager</option>
+                    </select>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-600">Enter the OTP sent to your email and your new password.</p>
+                    <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none tracking-widest text-lg font-semibold text-center" placeholder="Enter 6-digit OTP" required />
+                    <input type={showPassword ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none" placeholder="New Password" required />
+                  </>
+                )}
+                
+                <button type="submit" disabled={isProcessing} className="w-full py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-500">
+                    {isProcessing ? "Processing..." : (resetStep === 1 ? "Send Reset OTP" : "Reset Password")}
+                </button>
+
+                <button type="button" onClick={() => resetMode(true)} className="w-full text-xs text-gray-500 hover:underline flex items-center justify-center gap-1 mt-4">
+                    <ArrowLeft className="w-3 h-3" /> Back to Login
+                </button>
+              </div>
+            ) : (
+              <>
             {isLogin && (
                 <div className="flex gap-2">
                     <button type="button" onClick={() => setAuthMethod('password')} className={`flex-1 py-2 rounded border text-xs font-medium ${authMethod === 'password' ? 'bg-black text-white' : 'bg-white text-gray-700'}`}>Password</button>
@@ -254,6 +343,11 @@ export function LoginForm() {
                           )}
 
                           <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none" placeholder="Password" required />
+                          {isLogin && (
+                              <div className="flex justify-end">
+                                  <button type="button" onClick={() => setIsForgotPassword(true)} className="text-xs text-black font-medium hover:underline">Forgot Password?</button>
+                              </div>
+                          )}
                       </>
                   )}
 
@@ -294,6 +388,8 @@ export function LoginForm() {
                 <button type="button" onClick={() => resetMode(true)} className="w-full text-xs text-gray-500 hover:underline flex items-center justify-center gap-1">
                     <ArrowLeft className="w-3 h-3" /> Already have an account? Login
                 </button>
+            )}
+            </>
             )}
           </form>
         </div>

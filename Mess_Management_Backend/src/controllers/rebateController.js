@@ -50,6 +50,9 @@ exports.applyRebate = async (req, res) => {
         },
         endDate: {
           [Op.gte]: startDate
+        },
+        status: {
+          [Op.ne]: 'Rejected'
         }
       }
     });
@@ -202,6 +205,35 @@ exports.rejectRebate = async (req, res) => {
       message: "Rebate rejected",
       rebate
     });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.deleteRebate = async (req, res) => {
+  try {
+    if (req.user.role !== "student") {
+      return res.status(403).json({ error: "Only students allowed" });
+    }
+
+    const rebate = await Rebate.findByPk(req.params.id);
+
+    if (!rebate) {
+      return res.status(404).json({ error: "Rebate not found" });
+    }
+
+    if (rebate.StudentRollNo !== req.user.rollNo) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    if (rebate.status !== "Pending") {
+      return res.status(400).json({ error: "Only pending requests can be deleted" });
+    }
+
+    await rebate.destroy();
+
+    res.json({ message: "Rebate request deleted successfully" });
 
   } catch (err) {
     res.status(500).json({ error: err.message });

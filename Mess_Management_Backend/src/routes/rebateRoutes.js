@@ -11,6 +11,7 @@ const { allowRoles } = require("../middleware/roleMiddleware");
 router.post("/apply", protect, allowRoles("student"), rebateController.applyRebate);
 router.post("/", protect, allowRoles("student"), rebateController.applyRebate); // Alias for frontend
 router.get("/my", protect, allowRoles("student"), rebateController.getMyRebates);
+router.delete("/:id", protect, allowRoles("student"), rebateController.deleteRebate);
 
 // manager
 router.get("/", protect, allowRoles("manager"), rebateController.getAllRebates);
