@@ -89,7 +89,19 @@ JWT_SECRET=...
 EMAIL_USER=...
 EMAIL_PASS=...
 ```
-
+### Add dummy data in data base 
+```bash 
+node src/seed.js 
+```
+Manadatory to get approve by manager after new regesteration of new students as this will add a default Manager
+#### Use the following credentials to log in as the Manager:
+```
+email : manager@mess.com
+password : abcd1234
+```
+*NOTE :*
+-  Newly registered students cannot log in immediately.
+- A Manager must approve each student before they are allowed access to the system.
 ### Run Backend
 
 ```bash
