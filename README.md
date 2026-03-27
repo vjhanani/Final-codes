@@ -17,6 +17,110 @@ PostgreSQL
 
 ## Project Setup
 
+##  Guide to Use
+
+### 1. Clone the Project
+
+```bash
+git clone https://github.com/CS253-Mess-Management/Final-codes.git
+cd Final-codes/
+```
+
+---
+
+##  Start Face Recognition Model (Backend - Python)
+
+Make sure you are in the **root directory** of the project.
+
+### Install Dependencies
+
+```bash
+pip install fastapi uvicorn opencv-contrib-python numpy python-multipart pydantic
+```
+
+### Run the Server
+
+```bash
+uvicorn main:app --port 8000 --reload
+```
+
+---
+
+## Start Frontend
+
+Make sure you are in the **root directory** of the project.
+
+```bash
+cd "Mess automation login page"
+```
+
+### Install Dependencies
+
+```bash
+npm install
+```
+
+### Run Frontend
+
+```bash
+npm run dev
+```
+
+---
+
+## Start Backend (Node.js)
+
+Make sure you are in the **root directory** of the project.
+
+```bash
+cd Mess_Management_Backend/
+```
+
+### Install Dependencies
+
+```bash
+npm install
+```
+### Create a .env file and the following :
+```
+PORT=5000
+DB_URL=...
+JWT_SECRET=...
+EMAIL_USER=...
+EMAIL_PASS=...
+```
+### Add dummy data in data base 
+```bash 
+node src/seed.js 
+```
+Manadatory to get approve by manager after new regesteration of new students as this will add a default Manager
+#### Use the following credentials to log in as the Manager:
+```
+email : manager@mess.com
+password : abcd1234
+```
+*NOTE :*
+-  Newly registered students cannot log in immediately.
+- A Manager must approve each student before they are allowed access to the system.
+### Run Backend
+
+```bash
+npm run dev
+```
+
+---
+
+##  Notes
+
+* Ensure Python and Node.js are installed.
+* Run all services in separate terminals.
+* Default ports:
+
+  * FastAPI: `8000`
+  * Frontend: `5173`
+  * Backend: `5000`
+
+
 ### STEP 1 Create datasabe:
 Create a database named facereco and run the following SQL command to create the user table:
 
