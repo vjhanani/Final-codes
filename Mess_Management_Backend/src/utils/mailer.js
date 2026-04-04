@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // send OTP email
-exports.sendOTPEmail = async (email, otp) => {
+const sendOTPEmail = async (email, otp) => {
   const mailOptions = {
     from: `"Mess Automation" <${process.env.EMAIL_USER}>`,
     to: email,
@@ -36,4 +36,4 @@ const sendMail = async (to, subject, html) => {
   });
 };
 
-module.exports = { sendMail };
+module.exports = { sendOTPEmail, sendMail };
