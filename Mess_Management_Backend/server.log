@@ -1,0 +1,5 @@
+nohup: ignoring input
+◇ injected env (5) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+DB Connected
+Server running on port 5000

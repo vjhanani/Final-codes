@@ -14,18 +14,19 @@ const getCurrentMeal = () => {
 
 exports.addExtraItem = async (req, res) => {
   try {
-    if (req.user.role !== "manager") {
+    const userRole = req.userRole || (req.user && req.user.role);
+    if (userRole !== "manager") {
       return res.status(403).json({ error: "Only manager allowed" });
     }
 
     // Check if item with exact name already exists (case-insensitive)
-    const existingItem = await ExtraItem.findOne({ 
-      where: { name: { [Op.iLike]: req.body.name } } 
+    const existingItem = await ExtraItem.findOne({
+      where: { name: { [Op.iLike]: req.body.name } }
     });
 
     if (existingItem) {
-      return res.status(400).json({ 
-        error: "An item with this exact name already exists in the inventory." 
+      return res.status(400).json({
+        error: "An item with this exact name already exists in the inventory."
       });
     }
 
@@ -39,7 +40,8 @@ exports.addExtraItem = async (req, res) => {
 
 exports.updateExtraItem = async (req, res) => {
   try {
-    if (req.user.role !== "manager") {
+    const userRole = req.userRole || (req.user && req.user.role);
+    if (userRole !== "manager") {
       return res.status(403).json({ error: "Only manager allowed" });
     }
 
@@ -56,7 +58,8 @@ exports.updateExtraItem = async (req, res) => {
 
 exports.deleteExtraItem = async (req, res) => {
   try {
-    if (req.user.role !== "manager") {
+    const userRole = req.userRole || (req.user && req.user.role);
+    if (userRole !== "manager") {
       return res.status(403).json({ error: "Only manager allowed" });
     }
 
@@ -71,14 +74,15 @@ exports.deleteExtraItem = async (req, res) => {
 exports.getAllExtras = async (req, res) => {
   try {
     const days = [
-      "Sunday","Monday","Tuesday","Wednesday",
-      "Thursday","Friday","Saturday"
+      "Sunday", "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday"
     ];
 
     const today = days[new Date().getDay()];
     const currentMeal = getCurrentMeal();
 
-    if (req.user && req.user.role === "manager") {
+    const userRole = req.userRole || (req.user && req.user.role);
+    if (req.user && userRole === "manager") {
       const items = await ExtraItem.findAll();
       return res.json({
         day: today,
@@ -88,21 +92,7 @@ exports.getAllExtras = async (req, res) => {
     }
 
     const items = await ExtraItem.findAll({
-      where: {
-        isAvailable: true,
-        [Op.and]: [
-          {
-            day: {
-              [Op.or]: [today, "All"]
-            }
-          },
-          {
-            mealType: {
-              [Op.or]: [currentMeal, "All"]
-            }
-          }
-        ]
-      }
+      where: { isAvailable: true }
     });
 
     res.json({
@@ -118,7 +108,8 @@ exports.getAllExtras = async (req, res) => {
 
 exports.buyExtras = async (req, res) => {
   try {
-    if (req.user.role !== "student") {
+    const userRole = req.userRole || (req.user && req.user.role);
+    if (userRole !== "student") {
       return res.status(403).json({ error: "Only students allowed" });
     }
 
@@ -130,8 +121,8 @@ exports.buyExtras = async (req, res) => {
     }
 
     const days = [
-      "Sunday","Monday","Tuesday","Wednesday",
-      "Thursday","Friday","Saturday"
+      "Sunday", "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday"
     ];
 
     const today = days[new Date().getDay()];
@@ -168,15 +159,6 @@ exports.buyExtras = async (req, res) => {
           });
         }
 
-        if (
-          !(extra.day === "All" || extra.day === today) ||
-          !(extra.mealType === "All" || extra.mealType === currentMeal)
-        ) {
-          await transaction.rollback();
-          return res.status(400).json({
-            error: `${extra.name} not available for ${today} ${currentMeal}`
-          });
-        }
 
         if (!item.quantity || item.quantity <= 0) {
           await transaction.rollback();
@@ -234,7 +216,8 @@ exports.buyExtras = async (req, res) => {
 
 exports.getMyExtras = async (req, res) => {
   try {
-    if (req.user.role !== "student") {
+    const userRole = req.userRole || (req.user && req.user.role);
+    if (userRole !== "student") {
       return res.status(403).json({ error: "Only students allowed" });
     }
 
@@ -261,7 +244,8 @@ exports.getMyExtras = async (req, res) => {
 
 exports.getExtrasAnalytics = async (req, res) => {
   try {
-    if (req.user.role !== "manager") {
+    const userRole = req.userRole || (req.user && req.user.role);
+    if (userRole !== "manager") {
       return res.status(403).json({ error: "Only manager allowed" });
     }
 
@@ -293,6 +277,38 @@ exports.getExtrasAnalytics = async (req, res) => {
       items: itemStats
     });
 
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getPurchaseHistory = async (req, res) => {
+  try {
+    const userRole = req.userRole || (req.user && req.user.role);
+    if (userRole !== "manager") {
+      return res.status(403).json({ error: "Only manager allowed" });
+    }
+
+    const purchases = await ExtraPurchase.findAll({
+      include: [
+        { model: ExtraItem, attributes: ["name", "price"] },
+        { model: Student, attributes: ["rollNo", "name"] }
+      ],
+      order: [["purchaseDate", "DESC"]]
+    });
+
+    const history = purchases.map(p => ({
+      id: p.id,
+      studentRollNo: p.Student ? p.Student.rollNo : p.StudentRollNo,
+      studentName: p.Student ? p.Student.name : "Unknown",
+      purchaseDate: p.purchaseDate,
+      itemName: p.ExtraItem ? p.ExtraItem.name : "Unknown",
+      itemPrice: p.ExtraItem ? parseFloat(p.ExtraItem.price) : 0,
+      quantity: p.quantity,
+      totalAmount: parseFloat(p.totalPrice)
+    }));
+
+    res.json({ history });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

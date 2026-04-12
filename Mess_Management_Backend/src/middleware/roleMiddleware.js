@@ -3,15 +3,17 @@
 exports.allowRoles = (...roles) => {
   return (req, res, next) => {
     try {
-      if (!req.user || !req.user.role) {
+      const userRole = req.userRole || (req.user && req.user.role);
+
+      if (!req.user || !userRole) {
         return res.status(401).json({
-          error: "User not authenticated"
+          error: "User not authenticated. userRole: (" + userRole + ")"
         });
       }
 
-      if (!roles.includes(req.user.role)) {
+      if (!roles.includes(userRole)) {
         return res.status(403).json({
-          error: "Access denied: insufficient permissions"
+          error: "Access denied! Found role: (" + userRole + "). Expected one of: (" + roles.join(", ") + ")"
         });
       }
 

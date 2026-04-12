@@ -39,7 +39,8 @@ exports.protect = async (req, res, next) => {
       }
 
       req.user = user;
-      req.user.role = "student";
+      req.userRole = "student";
+      req.user.role = "student"; 
     } else {
       const user = await MessManager.findByPk(decoded.id);
 
@@ -48,6 +49,7 @@ exports.protect = async (req, res, next) => {
       }
 
       req.user = user;
+      req.userRole = "manager";
       req.user.role = "manager";
     }
 

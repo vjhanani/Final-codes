@@ -12,6 +12,7 @@ router.post("/add", protect, allowRoles("manager"), extrasController.addExtraIte
 router.put("/update/:id", protect, allowRoles("manager"), extrasController.updateExtraItem);
 router.delete("/delete/:id", protect, allowRoles("manager"), extrasController.deleteExtraItem);
 router.get("/analytics", protect, allowRoles("manager"), extrasController.getExtrasAnalytics);
+router.get("/purchases", protect, allowRoles("manager"), extrasController.getPurchaseHistory);
 
 // student
 router.post("/buy", protect, allowRoles("student"), extrasController.buyExtras);
