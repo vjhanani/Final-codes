@@ -25,9 +25,10 @@ exports.protect = async (req, res, next) => {
 
     // 🔐 verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const normalizedRole = (decoded.role || "").toLowerCase().trim();
 
     // 👤 attach user
-    if (decoded.role === "student") {
+    if (normalizedRole === "student") {
       const user = await Student.findByPk(decoded.id);
 
       if (!user) {
@@ -40,8 +41,8 @@ exports.protect = async (req, res, next) => {
 
       req.user = user;
       req.userRole = "student";
-      req.user.role = "student"; 
-    } else {
+      req.user.role = "student";
+    } else if (normalizedRole === "manager") {
       const user = await MessManager.findByPk(decoded.id);
 
       if (!user) {
@@ -51,6 +52,8 @@ exports.protect = async (req, res, next) => {
       req.user = user;
       req.userRole = "manager";
       req.user.role = "manager";
+    } else {
+      return res.status(401).json({ error: "Invalid user role in token" });
     }
 
     // Standardize role to lowercase and trimmed for consistent permission checks
@@ -58,7 +61,7 @@ exports.protect = async (req, res, next) => {
       req.user.role = (req.user.role || "").toLowerCase().trim();
     }
 
-    console.log(`[AUTH] Decoded Role: ${decoded.role}, Set req.user.role: ${req.user.role}, User ID: ${decoded.id}`);
+    // console.log(`[AUTH] Decoded Role: ${decoded.role}, Set req.user.role: ${req.user.role}, User ID: ${decoded.id}`);
     next();
 
   } catch (err) {
