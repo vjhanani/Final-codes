@@ -26,6 +26,7 @@ export function MenuManagement() {
   const [newItemName, setNewItemName] = useState('');
   const [newItemPrice, setNewItemPrice] = useState('');
   const [newItemCategory, setNewItemCategory] = useState('Snacks');
+  const [isAddingItem, setIsAddingItem] = useState(false);
 
   // BDMR State
   const [bdmr, setBdmr] = useState('70');
@@ -78,12 +79,12 @@ export function MenuManagement() {
       if (res.ok) {
         const data = await res.json();
         const items = data.items.map((i: any) => ({
-            id: String(i.id),
-            name: i.name,
-            price: parseFloat(i.price),
-            mealType: i.mealType,
-            isAvailable: i.isAvailable
-         }));
+          id: String(i.id),
+          name: i.name,
+          price: parseFloat(i.price),
+          mealType: i.mealType,
+          isAvailable: i.isAvailable
+        }));
         setExtraItems(items);
       }
     } catch (err) {
@@ -134,7 +135,7 @@ export function MenuManagement() {
           Dinner: editingVals.dinner.split('\n').map(s => s.trim()).filter(Boolean)
         }
       };
-      
+
       const res = await fetch(`${API_HOST}/api/menu/day/${day}`, {
         method: 'PUT',
         headers: {
@@ -143,7 +144,7 @@ export function MenuManagement() {
         },
         body: JSON.stringify(payload)
       });
-      
+
       if (res.ok) {
         setEditingDay(null);
         fetchMenu();
@@ -152,7 +153,7 @@ export function MenuManagement() {
         const err = await res.json();
         alert(err.error || 'Failed to update menu');
       }
-    } catch(err) {
+    } catch (err) {
       alert('Network error while saving menu');
     }
   };
@@ -274,11 +275,11 @@ export function MenuManagement() {
       const res = await fetch(`${API_HOST}/api/special-items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ 
-          name: newSpecialName, 
-          price: parseFloat(newSpecialPrice), 
+        body: JSON.stringify({
+          name: newSpecialName,
+          price: parseFloat(newSpecialPrice),
           meal: newSpecialMeal,
-          date: newSpecialDate 
+          date: newSpecialDate
         })
       });
       if (res.ok) {
@@ -312,9 +313,9 @@ export function MenuManagement() {
             <input type="text" placeholder="Item Name" value={newSpecialName} onChange={e => setNewSpecialName(e.target.value)} className="p-2 border border-black" />
             <input type="number" placeholder="Cost" value={newSpecialPrice} onChange={e => setNewSpecialPrice(e.target.value)} className="p-2 border border-black" />
             <select value={newSpecialMeal} onChange={e => setNewSpecialMeal(e.target.value)} className="p-2 border border-black bg-white">
-                <option value="breakfast">Breakfast</option>
-                <option value="lunch">Lunch</option>
-                <option value="dinner">Dinner</option>
+              <option value="breakfast">Breakfast</option>
+              <option value="lunch">Lunch</option>
+              <option value="dinner">Dinner</option>
             </select>
             <input type="date" value={newSpecialDate} onChange={e => setNewSpecialDate(e.target.value)} className="p-2 border border-black" />
           </div>
@@ -343,12 +344,12 @@ export function MenuManagement() {
                   <td className="px-4 py-2 capitalize">{item.meal}</td>
                   <td className="px-4 py-2">{item.date}</td>
                   <td className="px-4 py-2">
-                    <button 
+                    <button
                       onClick={async () => {
                         const token = localStorage.getItem('token');
-                        await fetch(`${API_HOST}/api/special-items/${item.id}`, { 
-                           method: 'DELETE',
-                           headers: { Authorization: `Bearer ${token}` }
+                        await fetch(`${API_HOST}/api/special-items/${item.id}`, {
+                          method: 'DELETE',
+                          headers: { Authorization: `Bearer ${token}` }
                         });
                         fetchSpecialItems();
                       }}
@@ -360,7 +361,7 @@ export function MenuManagement() {
                 </tr>
               ))}
               {specialItems.length === 0 && (
-                 <tr><td colSpan={5} className="px-4 py-4 text-center text-gray-400">No special items configured</td></tr>
+                <tr><td colSpan={5} className="px-4 py-4 text-center text-gray-400">No special items configured</td></tr>
               )}
             </tbody>
           </table>
@@ -408,16 +409,16 @@ export function MenuManagement() {
       <div className="border-2 border-black p-6">
         <div className="max-w-xs">
           <label className="block font-medium mb-2">Base Daily Mess Rate (₹)</label>
-          <input 
-             type="number" 
-             value={bdmr} 
-             onChange={e => setBdmr(e.target.value)}
-             className="w-full px-3 py-2 border-2 border-black focus:outline-none" 
+          <input
+            type="number"
+            value={bdmr}
+            onChange={e => setBdmr(e.target.value)}
+            className="w-full px-3 py-2 border-2 border-black focus:outline-none"
           />
           <p className="text-xs text-gray-500 mt-2">This value is used for rebate and fine calculations.</p>
         </div>
 
-        <button 
+        <button
           onClick={handleUpdateBDMR}
           className="mt-6 px-6 py-2 bg-black text-white hover:bg-gray-800"
         >
@@ -429,110 +430,119 @@ export function MenuManagement() {
 
   function renderExtrasManagement() {
     return (
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-bold">Extra Items Inventory</h3>
-            <button 
-              onClick={() => setShowAddItemForm(!showAddItemForm)}
-              className="flex items-center gap-2 px-4 py-2 border-2 border-black hover:bg-black hover:text-white transition-colors"
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-bold">Extra Items Inventory</h3>
+          <button
+            onClick={() => setShowAddItemForm(!showAddItemForm)}
+            className="flex items-center gap-2 px-4 py-2 border-2 border-black hover:bg-black hover:text-white transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add New Item
+          </button>
+        </div>
+
+        {showAddItemForm && (
+          <div className="border-2 border-black p-6 bg-gray-50 space-y-4">
+            <h4 className="font-bold">Add New Extra Item</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <input type="text" placeholder="Item Name" value={newItemName} onChange={e => setNewItemName(e.target.value)} className="p-2 border border-black" />
+              <input type="number" placeholder="Price (₹)" value={newItemPrice} onChange={e => setNewItemPrice(e.target.value)} className="p-2 border border-black" />
+              <select value={newItemCategory} onChange={e => setNewItemCategory(e.target.value)} className="p-2 border border-black bg-white">
+                <option value="Breakfast">Breakfast</option>
+                <option value="Lunch">Lunch</option>
+                <option value="Dinner">Dinner</option>
+                <option value="All">All</option>
+              </select>
+            </div>
+            <button
+              onClick={async () => {
+                if (isAddingItem) return;
+                setIsAddingItem(true);
+                try {
+                  const token = localStorage.getItem('token');
+                  const res = await fetch(`${API_HOST}/api/extras/add`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ name: newItemName, price: newItemPrice, mealType: newItemCategory, day: 'All' })
+                  });
+                  if (res.ok) {
+                    fetchExtras();
+                    setShowAddItemForm(false);
+                    setNewItemName('');
+                    setNewItemPrice('');
+                  } else {
+                    const err = await res.json();
+                    alert(err.error || 'Failed to add item');
+                  }
+                } catch (err) {
+                  alert('Network error');
+                } finally {
+                  setIsAddingItem(false);
+                }
+              }}
+              disabled={isAddingItem}
+              className={`px-6 py-2 text-white transition-colors ${isAddingItem ? 'bg-gray-500 cursor-not-allowed' : 'bg-black hover:bg-gray-800'
+                }`}
             >
-              <Plus className="w-4 h-4" />
-              Add New Item
+              {isAddingItem ? 'Adding...' : 'Add to Inventory'}
             </button>
           </div>
-    
-          {showAddItemForm && (
-            <div className="border-2 border-black p-6 bg-gray-50 space-y-4">
-              <h4 className="font-bold">Add New Extra Item</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <input type="text" placeholder="Item Name" value={newItemName} onChange={e => setNewItemName(e.target.value)} className="p-2 border border-black" />
-                <input type="number" placeholder="Price (₹)" value={newItemPrice} onChange={e => setNewItemPrice(e.target.value)} className="p-2 border border-black" />
-                <select value={newItemCategory} onChange={e => setNewItemCategory(e.target.value)} className="p-2 border border-black bg-white">
-                  <option value="Breakfast">Breakfast</option>
-                  <option value="Lunch">Lunch</option>
-                  <option value="Dinner">Dinner</option>
-                  <option value="All">All</option>
-                </select>
-              </div>
-              <button 
-                onClick={async () => {
-                    const token = localStorage.getItem('token');
-                    const res = await fetch(`${API_HOST}/api/extras/add`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                        body: JSON.stringify({ name: newItemName, price: newItemPrice, mealType: newItemCategory, day: 'All' })
-                    });
-                    if (res.ok) {
-                        fetchExtras();
-                        setShowAddItemForm(false);
-                        setNewItemName('');
-                        setNewItemPrice('');
-                    } else {
-                        const err = await res.json();
-                        alert(err.error || "Failed to add item");
-                    }
-                }}
-                className="px-6 py-2 bg-black text-white hover:bg-gray-800 transition-colors"
-              >
-                Add to Inventory
-              </button>
-            </div>
-          )}
-    
-          <div className="border-2 border-black overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-black text-white text-sm">
-                <tr>
-                  <th className="px-4 py-3 text-left">Item Name</th>
-                  <th className="px-4 py-3 text-left">Category</th>
-                  <th className="px-4 py-3 text-left">Price</th>
-                  <th className="px-4 py-3 text-left">Status</th>
-                  <th className="px-4 py-3 text-left">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {extraItems.map((item) => (
-                  <tr key={item.id} className="border-t border-black">
-                    <td className="px-4 py-3 font-medium">{item.name}</td>
-                    <td className="px-4 py-3 capitalize">{item.mealType}</td>
-                    <td className="px-4 py-3">₹{item.price}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                        item.isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+        )}
+
+        <div className="border-2 border-black overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-black text-white text-sm">
+              <tr>
+                <th className="px-4 py-3 text-left">Item Name</th>
+                <th className="px-4 py-3 text-left">Category</th>
+                <th className="px-4 py-3 text-left">Price</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm">
+              {extraItems.map((item) => (
+                <tr key={item.id} className="border-t border-black">
+                  <td className="px-4 py-3 font-medium">{item.name}</td>
+                  <td className="px-4 py-3 capitalize">{item.mealType}</td>
+                  <td className="px-4 py-3">₹{item.price}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${item.isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                       }`}>
-                        {item.isAvailable ? 'Available' : 'Unavailable'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => toggleStatus(item.id, item.isAvailable)}
-                          className="text-sm bg-gray-100 px-2 py-1 rounded hover:bg-gray-200"
-                        >
-                          Toggle
-                        </button>
-                        <button 
-                          onClick={async () => {
-                            const token = localStorage.getItem('token');
-                            await fetch(`${API_HOST}/api/extras/delete/${item.id}`, { 
-                               method: 'DELETE',
-                               headers: { Authorization: `Bearer ${token}` }
-                            });
-                            fetchExtras();
-                          }}
-                          className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded hover:bg-red-100"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      {item.isAvailable ? 'Available' : 'Unavailable'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => toggleStatus(item.id, item.isAvailable)}
+                        className="text-sm bg-gray-100 px-2 py-1 rounded hover:bg-gray-200"
+                      >
+                        Toggle
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const token = localStorage.getItem('token');
+                          await fetch(`${API_HOST}/api/extras/delete/${item.id}`, {
+                            method: 'DELETE',
+                            headers: { Authorization: `Bearer ${token}` }
+                          });
+                          fetchExtras();
+                        }}
+                        className="text-sm text-red-600 bg-red-50 px-2 py-1 rounded hover:bg-red-100"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      );
+      </div>
+    );
   }
 
   return (
@@ -550,11 +560,10 @@ export function MenuManagement() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`px-6 py-3 font-medium transition-colors ${
-              activeTab === tab.id
+            className={`px-6 py-3 font-medium transition-colors ${activeTab === tab.id
                 ? 'bg-black text-white'
                 : 'hover:bg-gray-100'
-            }`}
+              }`}
           >
             {tab.label}
           </button>

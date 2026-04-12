@@ -97,10 +97,9 @@ export function StudentsList() {
 
   const filteredStudents = students.filter(
     (student) =>
-      (student.messStatus === 'active' || student.messStatus === 'pending') &&
-      (student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.rollNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.room.toLowerCase().includes(searchTerm.toLowerCase()))
+      student.room.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusColor = (status: Student['messStatus']) => {
