@@ -313,6 +313,25 @@ export function MenuManagement() {
   };
 
   const handleUpdateBDMR = async () => {
+    // Validate BDMR value
+    if (!bdmr || bdmr === '') {
+      return alert("Please enter a valid amount");
+    }
+    
+    const bdmrValue = parseFloat(bdmr);
+    
+    if (isNaN(bdmrValue)) {
+      return alert("Please enter a valid amount");
+    }
+    
+    if (bdmrValue < 0) {
+      return alert("BDMR cannot be negative");
+    }
+    
+    if (bdmrValue === 0) {
+      return alert("BDMR must be greater than 0");
+    }
+    
     try {
       const token = localStorage.getItem('token');
       const date = new Date();
@@ -320,9 +339,13 @@ export function MenuManagement() {
       const res = await fetch(`${API_HOST}/api/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ key: configKey, value: bdmr })
+        body: JSON.stringify({ key: configKey, value: bdmrValue })
       });
       if (res.ok) alert("BDMR Settings Updated for this month!");
+      else {
+        const err = await res.json();
+        alert(err.error || "Failed to update BDMR settings");
+      }
     } catch { alert("Network error"); }
   };
 
@@ -469,6 +492,8 @@ export function MenuManagement() {
             type="number"
             value={bdmr}
             onChange={e => setBdmr(e.target.value)}
+            min="1"
+            step="0.01"
             className="w-full px-3 py-2 border-2 border-black focus:outline-none"
           />
           <p className="text-xs text-gray-500 mt-2">This value is used for rebate and fine calculations.</p>
