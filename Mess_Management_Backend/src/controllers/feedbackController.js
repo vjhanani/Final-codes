@@ -88,10 +88,7 @@ exports.getAllFeedback = async (req, res) => {
       const raw = f.toJSON();
       if (raw.isAnonymous) {
         raw.StudentRollNo = "Hidden";
-        if (raw.Student) {
-          raw.Student.name = "Anonymous";
-          raw.Student.rollNo = "Hidden";
-        }
+        raw.Student = { name: "Anonymous", rollNo: "Hidden" };
       }
       return raw;
     });
@@ -120,10 +117,7 @@ exports.getFeedbackByCategory = async (req, res) => {
       const raw = f.toJSON();
       if (raw.isAnonymous) {
         raw.StudentRollNo = "Hidden";
-        if (raw.Student) {
-          raw.Student.name = "Anonymous";
-          raw.Student.rollNo = "Hidden";
-        }
+        raw.Student = { name: "Anonymous", rollNo: "Hidden" };
       }
       return raw;
     });
