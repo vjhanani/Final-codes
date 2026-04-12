@@ -25,7 +25,7 @@ exports.registerStudent = async (req, res) => {
       return res.status(400).json({ error: "Use IITK email" });
     }
 
-    const existing = await Student.findOne({ where: { rollNo } });
+    const existing = await Student.findOne({ where: { email } });
     if (existing && existing.status !== "Rejected") {
       return res.status(400).json({ error: "Student already exists" });
     }else if (existing && existing.status === "Rejected") {
