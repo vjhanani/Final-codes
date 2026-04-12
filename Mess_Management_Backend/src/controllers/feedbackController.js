@@ -173,3 +173,36 @@ exports.getFeedbackStats = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.updateFeedbackStatus = async (req, res) => {
+  try {
+    if (req.user.role !== "manager") {
+      return res.status(403).json({ error: "Only manager allowed" });
+    }
+
+    const { id } = req.params;
+    const { status, response } = req.body;
+
+    const feedback = await Feedback.findByPk(id);
+    if (!feedback) {
+      return res.status(404).json({ error: "Feedback not found" });
+    }
+
+    if (status) {
+      if (!['pending', 'reviewed', 'resolved'].includes(status)) {
+        return res.status(400).json({ error: "Invalid status value" });
+      }
+      feedback.status = status;
+    }
+    if (response !== undefined) {
+      feedback.response = response;
+    }
+
+    await feedback.save();
+
+    res.json({ message: "Feedback updated successfully", feedback });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
