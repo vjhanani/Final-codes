@@ -20,6 +20,10 @@ exports.registerStudent = async (req, res) => {
   try {
     const { name, rollNo, email, password, roomNo, phone } = req.body;
 
+    if (!phone || !/^\d{10}$/.test(phone)) {
+      return res.status(400).json({ error: "Invalid phone number (must be 10 digits)" });
+    }
+
     // optional IITK validation
     if (!email.endsWith("@iitk.ac.in")) {
       return res.status(400).json({ error: "Use IITK email" });
@@ -295,7 +299,12 @@ exports.updateProfile = async (req, res) => {
 
     if (name) student.name = name;
     if (roomNo !== undefined) student.roomNo = roomNo;
-    if (phone !== undefined) student.phone = phone;
+    if (phone !== undefined) {
+      if (!/^\d{10}$/.test(phone)) {
+        return res.status(400).json({ error: "Invalid phone number (must be 10 digits)" });
+      }
+      student.phone = phone;
+    }
 
     await student.save();
 
