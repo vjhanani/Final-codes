@@ -12,6 +12,21 @@ exports.bookItem = async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
+    const targetDate = new Date(date);
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+
+    const maxDate = new Date(currentDate);
+    maxDate.setDate(maxDate.getDate() + 7);
+
+    if (targetDate < currentDate) {
+      return res.status(400).json({ error: "Cannot book items for past dates" });
+    }
+
+    if (targetDate > maxDate) {
+      return res.status(400).json({ error: "Pre-booking is restricted to a maximum of 7 days in advance" });
+    }
+
     const booking = await PreBooking.create({
       StudentRollNo: req.user.rollNo,
       dishName,
