@@ -317,7 +317,14 @@ export function MenuManagement() {
               <option value="lunch">Lunch</option>
               <option value="dinner">Dinner</option>
             </select>
-            <input type="date" value={newSpecialDate} onChange={e => setNewSpecialDate(e.target.value)} className="p-2 border border-black" />
+            <input 
+              type="date" 
+              value={newSpecialDate} 
+              min={new Date().toISOString().split('T')[0]}
+              max={new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0]}
+              onChange={e => setNewSpecialDate(e.target.value)} 
+              className="p-2 border border-black" 
+            />
           </div>
           <button onClick={handleCreateSpecial} className="px-6 py-2 bg-black text-white hover:bg-gray-800 transition-colors">Create Pre-booking Item</button>
         </div>

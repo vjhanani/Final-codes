@@ -17,6 +17,21 @@ exports.createSpecialItem = async (req, res) => {
       return res.status(400).json({ error: "Price must be a valid number greater than or equal to 0" });
     }
 
+    const targetDate = new Date(date);
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+
+    const maxDate = new Date(currentDate);
+    maxDate.setDate(maxDate.getDate() + 7);
+
+    if (targetDate < currentDate) {
+      return res.status(400).json({ error: "Cannot create items for past dates" });
+    }
+
+    if (targetDate > maxDate) {
+      return res.status(400).json({ error: "Cannot create items more than 7 days in advance" });
+    }
+
     const item = await SpecialItem.create({ name, price, meal, date });
     res.status(201).json(item);
   } catch (err) {
