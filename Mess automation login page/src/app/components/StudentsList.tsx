@@ -97,10 +97,9 @@ export function StudentsList() {
 
   const filteredStudents = students.filter(
     (student) =>
-      (student.messStatus === 'active' || student.messStatus === 'pending') &&
-      (student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.rollNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.room.toLowerCase().includes(searchTerm.toLowerCase()))
+      student.room.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusColor = (status: Student['messStatus']) => {
@@ -116,11 +115,53 @@ export function StudentsList() {
     }
   };
 
+  const handleExport = () => {
+    if (filteredStudents.length === 0) {
+      alert("No data available to export.");
+      return;
+    }
+
+    const headers = ['Roll Number', 'Name', 'Room', 'Email', 'Phone', 'Face ID', 'Mess Status', 'Join Date'];
+    
+    // Adding UTF-8 BOM so Excel opens it with correct encoding
+    const BOM = '\uFEFF';
+    
+    const csvRows = [
+      headers.map(h => `"${h}"`).join(','),
+      ...filteredStudents.map(s => [
+        `"${s.rollNumber}"`,
+        `"${s.name.replace(/"/g, '""')}"`, // Handle internal quotes
+        `"${s.room}"`,
+        `"${s.email}"`,
+        `"${s.phone}"`,
+        `"${s.hasFaceId ? 'Yes' : 'No'}"`,
+        `"${s.messStatus.toUpperCase()}"`,
+        `"${s.joinDate.split('T')[0]}"` // Standard ISO date for data integrity
+      ].join(','))
+    ];
+
+    const csvContent = BOM + csvRows.join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `students_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6 w-250">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">All Students</h2>
-        <button className="flex items-center gap-2 px-4 py-2 bg-black text-white hover:bg-gray-800">
+        <button 
+          onClick={handleExport}
+          className="flex items-center gap-2 px-4 py-2 bg-black text-white hover:bg-gray-800 transition-colors"
+        >
           <Download className="w-4 h-4" />
           Export List
         </button>

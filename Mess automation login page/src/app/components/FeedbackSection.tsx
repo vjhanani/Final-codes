@@ -9,11 +9,16 @@ interface Feedback {
   rating: number;
   category: string;
   message: string;
+  status: string;
+  response: string;
 }
 
 export function FeedbackSection() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editStatus, setEditStatus] = useState<string>('pending');
+  const [editResponse, setEditResponse] = useState<string>('');
 
   useEffect(() => {
     const fetchFeedbacks = async () => {
@@ -32,7 +37,9 @@ export function FeedbackSection() {
             date: f.createdAt,
             rating: f.rating,
             category: f.category,
-            message: f.comment || ''
+            message: f.comment || '',
+            status: f.status || 'pending',
+            response: f.response || ''
           }));
           setFeedbacks(mapped);
         }
@@ -42,6 +49,28 @@ export function FeedbackSection() {
     };
     fetchFeedbacks();
   }, []);
+
+  const handleUpdateFeedback = async (id: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_HOST}/api/feedback/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: editStatus, response: editResponse })
+      });
+      if (res.ok) {
+        setFeedbacks(feedbacks.map(f => f.id === id ? { ...f, status: editStatus, response: editResponse } : f));
+        alert('Feedback updated successfully!');
+      } else {
+        alert('Failed to update feedback');
+      }
+    } catch (err) {
+      alert('Error updating feedback');
+    }
+  };
 
   const categories = [
     { id: 'all', label: 'All Feedback' },
@@ -168,6 +197,81 @@ export function FeedbackSection() {
               <MessageSquare className="w-5 h-5 text-gray-400 mt-1" />
               <p className="text-sm flex-1">{feedback.message}</p>
             </div>
+
+            {editingId === feedback.id ? (
+              <div className="mt-4 border-t border-gray-200 pt-4">
+                <div className="mb-3">
+                  <label className="text-sm font-bold block mb-1">Status</label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                    className="w-48 border border-black p-2"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="reviewed">Reviewed</option>
+                    <option value="resolved">Resolved</option>
+                  </select>
+                </div>
+                <div className="mb-3">
+                  <label className="text-sm font-bold block mb-1">Response</label>
+                  <textarea
+                    value={editResponse}
+                    onChange={(e) => setEditResponse(e.target.value)}
+                    className="w-full border border-black p-2"
+                    rows={3}
+                    placeholder="Write a response..."
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      handleUpdateFeedback(feedback.id);
+                      setEditingId(null);
+                    }}
+                    className="px-4 py-2 bg-black text-white text-sm font-bold hover:bg-gray-800"
+                  >
+                    Save Changes
+                  </button>
+                  <button
+                    onClick={() => setEditingId(null)}
+                    className="px-4 py-2 border border-black text-sm font-bold hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 border-t border-gray-200 pt-4 flex justify-between items-start">
+                <div>
+                  <div className="text-sm">
+                    <span className="font-bold">Status:</span>{' '}
+                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                      feedback.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                      feedback.status === 'reviewed' ? 'bg-blue-100 text-blue-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {feedback.status ? feedback.status.charAt(0).toUpperCase() + feedback.status.slice(1) : 'Pending'}
+                    </span>
+                  </div>
+                  {feedback.response && (
+                    <div className="text-sm mt-2 bg-gray-50 p-3 rounded border border-gray-200">
+                      <p className="font-bold mb-1">Manager Response:</p>
+                      <p className="text-gray-700">{feedback.response}</p>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    setEditingId(feedback.id);
+                    setEditStatus(feedback.status || 'pending');
+                    setEditResponse(feedback.response || '');
+                  }}
+                  className="px-3 py-1.5 border border-black text-xs font-bold hover:bg-gray-100"
+                >
+                  Respond / Update
+                </button>
+              </div>
+            )}
           </div>
         ))}
 

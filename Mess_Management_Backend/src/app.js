@@ -20,6 +20,8 @@ app.use("/api/config", require("./routes/configRoutes"));
 app.use("/api/pre-booking", require("./routes/preBookingRoutes"));
 app.use("/api/stats", require("./routes/statsRoutes"));
 app.use("/api/special-items", require("./routes/specialItemRoutes"));
+app.use("/api/announcement", require("./routes/announcementRoutes"));
+app.use("/api/transactions", require("./routes/transactionRoutes"));
 app.use("/test", require("./routes/test.route"));
 
 module.exports = app;

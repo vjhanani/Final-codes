@@ -12,6 +12,7 @@ const Transaction = require("./Transaction");
 const Config = require("./Config");
 const PreBooking = require("./PreBooking");
 const SpecialItem = require("./SpecialItem");
+const Announcement = require("./Announcement");
 
 // --- Student Associations ---
 Student.hasMany(Feedback, { foreignKey: 'StudentRollNo' });
@@ -65,5 +66,6 @@ module.exports = {
    Transaction,
   Config,
   PreBooking,
-  SpecialItem
+  SpecialItem,
+  Announcement
 };

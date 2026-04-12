@@ -3,6 +3,7 @@
 const Poll = require("../models/Poll");
 const PollOption = require("../models/PollOption");
 const Vote = require("../models/Vote");
+const sequelize = require("../config/db");
 
 
 exports.createPoll = async (req, res) => {
@@ -12,6 +13,14 @@ exports.createPoll = async (req, res) => {
     }
 
     const { title, description, options } = req.body;
+
+    if (!title || title.trim() === "") {
+      return res.status(400).json({ error: "Poll question (title) is required" });
+    }
+
+    if (!options || Object.keys(options).length === 0 || !Object.values(options).some(mealOptions => mealOptions && mealOptions.length > 0)) {
+      return res.status(400).json({ error: "At least one poll option is required" });
+    }
 
     // Check if a similar active or scheduled poll already exists
     const existingPoll = await Poll.findOne({
@@ -97,6 +106,10 @@ exports.updatePollOptions = async (req, res) => {
 
     const { options } = req.body;
 
+    if (!options || Object.keys(options).length === 0 || !Object.values(options).some(mealOptions => mealOptions && mealOptions.length > 0)) {
+      return res.status(400).json({ error: "At least one poll option is required" });
+    }
+
     await PollOption.destroy({
       where: { PollId: req.params.id },
     });
@@ -122,6 +135,19 @@ exports.getAllPolls = async (req, res) => {
   try {
     const polls = await Poll.findAll({
       include: [{ model: PollOption }],
+      attributes: {
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT COUNT(DISTINCT "StudentRollNo")
+              FROM "Votes" AS "Vote"
+              WHERE "Vote"."PollId" = "Poll"."id"
+            )`),
+            'participantCount'
+          ]
+        ]
+      },
+      order: [['createdAt', 'DESC']]
     });
 
     res.json(polls);

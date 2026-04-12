@@ -7,7 +7,8 @@ interface FeedbackItem {
   category: string;
   rating: number;
   comment: string;
-  status?: 'pending' | 'reviewed' | 'resolved'; // Status currently simulated if backend doesn't store it
+  status?: 'pending' | 'reviewed' | 'resolved'; // Status from backend
+  response?: string;
 }
 
 export function Feedback() {
@@ -218,6 +219,12 @@ export function Feedback() {
                   </div>
                 </div>
                 <p className="text-gray-700">{feedback.comment}</p>
+                {feedback.response && (
+                  <div className="mt-3 bg-gray-50 border border-gray-200 rounded p-3 text-sm">
+                    <p className="font-semibold text-gray-800 mb-1">Response from Manager:</p>
+                    <p className="text-gray-700">{feedback.response}</p>
+                  </div>
+                )}
               </div>
             ))}
           </div>

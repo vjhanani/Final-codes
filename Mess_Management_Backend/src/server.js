@@ -18,7 +18,8 @@ const startServer = async () => {
     await sequelize.sync({ alter: true });
 
     app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+      console.log(`🚀 Server ready on port ${PORT}`);
+      console.log(`📡 Database URL: ${process.env.DB_URL ? "CONFIGURED" : "MISSING"}`);
     });
 
   } catch (err) {

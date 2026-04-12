@@ -24,7 +24,7 @@ const ExtraItem = sequelize.define('ExtraItem', {
         allowNull: false
     },
     day: {
-        type: DataTypes.ENUM('Sunday','Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'All'),
+        type: DataTypes.ENUM('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'All'),
         allowNull: false
     }
 }, { timestamps: true });

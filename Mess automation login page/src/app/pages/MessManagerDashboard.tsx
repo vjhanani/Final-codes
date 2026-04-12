@@ -21,6 +21,7 @@ import { ExtraBuyingHistory } from '../components/ExtraBuyingHistory';
 import { MenuManagement } from '../components/MenuManagement';
 import { PollManagement } from '../components/PollManagement';
 import { NewPersonRequests } from '../components/NewPersonRequests';
+import { AnnouncementManagement } from '../components/AnnouncementManagement';
 
 export default function ManagerDashboard() {
   const navigate = useNavigate();
@@ -55,6 +56,7 @@ export default function ManagerDashboard() {
     { id: 'history', label: 'Extra Buying History', icon: ShoppingCart },
     { id: 'menu', label: 'Menu Management', icon: Calendar },
     { id: 'polls', label: 'Poll Management', icon: BarChart3 },
+    { id: 'announcements', label: 'Announcements', icon: MessageSquare },
   ];
 
   const renderContent = () => {
@@ -75,6 +77,8 @@ export default function ManagerDashboard() {
         return <MenuManagement />;
       case 'polls':
         return <PollManagement />;
+      case 'announcements':
+        return <AnnouncementManagement />;
       case 'dashboard':
       default:
         return <DashboardOverview onNavigate={setActiveSection} />;
@@ -142,6 +146,7 @@ function DashboardOverview({ onNavigate }: { onNavigate: (section: string) => vo
     newPersonRequests: '0',
     todaysPrebookings: '0'
   });
+  const [recentActivities, setRecentActivities] = useState<{time: string, text: string, type: string}[]>([]);
 
   const fetchStats = async () => {
     try {
@@ -159,8 +164,23 @@ function DashboardOverview({ onNavigate }: { onNavigate: (section: string) => vo
           newPersonRequests: String(data.newPersonRequests || 0),
           todaysPrebookings: String(data.todaysPrebookings || 0)
         });
+        setRecentActivities(data.recentActivities || []);
       }
     } catch { /* */ }
+  };
+
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'now';
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
   };
 
   useEffect(() => {
@@ -204,8 +224,8 @@ function DashboardOverview({ onNavigate }: { onNavigate: (section: string) => vo
           <button onClick={() => onNavigate('polls')} className="border-2 border-black p-4 hover:bg-black hover:text-white transition-colors">
             Create New Poll
           </button>
-          <button onClick={() => onNavigate('feedback')} className="border-2 border-black p-4 hover:bg-black hover:text-white transition-colors">
-            View Feedback
+          <button onClick={() => onNavigate('announcements')} className="border-2 border-black p-4 hover:bg-black hover:text-white transition-colors">
+            Post Notification
           </button>
         </div>
       </div>
@@ -213,17 +233,16 @@ function DashboardOverview({ onNavigate }: { onNavigate: (section: string) => vo
       <div className="border-2 border-black p-6">
         <h3 className="text-lg font-bold mb-4">Recent Activities</h3>
         <div className="space-y-3">
-          {[
-            { time: '1 min ago', text: 'System stats synchronized' },
-            { time: '10 mins ago', text: 'New rebate request from Student #2301' },
-            { time: '25 mins ago', text: 'Poll "Menu Preferences" ended' },
-            { time: '1 hour ago', text: 'Menu updated for tomorrow' },
-          ].map((activity, i) => (
-            <div key={i} className="flex items-center gap-4 pb-3 border-b border-gray-200 last:border-0">
-              <span className="text-xs text-gray-500 w-24">{activity.time}</span>
-              <span className="text-sm">{activity.text}</span>
-            </div>
-          ))}
+          {recentActivities.length > 0 ? (
+            recentActivities.map((activity, i) => (
+              <div key={i} className="flex items-center gap-4 pb-3 border-b border-gray-200 last:border-0">
+                <span className="text-xs text-gray-500 w-24">{formatTime(activity.time)}</span>
+                <span className="text-sm">{activity.text}</span>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-gray-500 italic">No recent activities found.</p>
+          )}
         </div>
       </div>
     </div>

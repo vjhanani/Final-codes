@@ -88,10 +88,7 @@ exports.getAllFeedback = async (req, res) => {
       const raw = f.toJSON();
       if (raw.isAnonymous) {
         raw.StudentRollNo = "Hidden";
-        if (raw.Student) {
-          raw.Student.name = "Anonymous";
-          raw.Student.rollNo = "Hidden";
-        }
+        raw.Student = { name: "Anonymous", rollNo: "Hidden" };
       }
       return raw;
     });
@@ -120,10 +117,7 @@ exports.getFeedbackByCategory = async (req, res) => {
       const raw = f.toJSON();
       if (raw.isAnonymous) {
         raw.StudentRollNo = "Hidden";
-        if (raw.Student) {
-          raw.Student.name = "Anonymous";
-          raw.Student.rollNo = "Hidden";
-        }
+        raw.Student = { name: "Anonymous", rollNo: "Hidden" };
       }
       return raw;
     });
@@ -174,6 +168,39 @@ exports.getFeedbackStats = async (req, res) => {
       averageRating: avgRating,
       categories: categoryStats
     });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateFeedbackStatus = async (req, res) => {
+  try {
+    if (req.user.role !== "manager") {
+      return res.status(403).json({ error: "Only manager allowed" });
+    }
+
+    const { id } = req.params;
+    const { status, response } = req.body;
+
+    const feedback = await Feedback.findByPk(id);
+    if (!feedback) {
+      return res.status(404).json({ error: "Feedback not found" });
+    }
+
+    if (status) {
+      if (!['pending', 'reviewed', 'resolved'].includes(status)) {
+        return res.status(400).json({ error: "Invalid status value" });
+      }
+      feedback.status = status;
+    }
+    if (response !== undefined) {
+      feedback.response = response;
+    }
+
+    await feedback.save();
+
+    res.json({ message: "Feedback updated successfully", feedback });
 
   } catch (err) {
     res.status(500).json({ error: err.message });

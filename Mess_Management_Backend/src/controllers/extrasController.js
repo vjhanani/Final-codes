@@ -3,6 +3,7 @@
 const ExtraItem = require("../models/ExtraItem");
 const ExtraPurchase = require("../models/ExtraPurchase");
 const Student = require("../models/Student");
+const Transaction = require("../models/Transaction");
 const { Op } = require("sequelize");
 
 const getCurrentMeal = () => {
@@ -14,18 +15,19 @@ const getCurrentMeal = () => {
 
 exports.addExtraItem = async (req, res) => {
   try {
-    if (req.user.role !== "manager") {
+    const userRole = req.userRole || (req.user && req.user.role);
+    if (userRole !== "manager") {
       return res.status(403).json({ error: "Only manager allowed" });
     }
 
     // Check if item with exact name already exists (case-insensitive)
-    const existingItem = await ExtraItem.findOne({ 
-      where: { name: { [Op.iLike]: req.body.name } } 
+    const existingItem = await ExtraItem.findOne({
+      where: { name: { [Op.iLike]: req.body.name } }
     });
 
     if (existingItem) {
-      return res.status(400).json({ 
-        error: "An item with this exact name already exists in the inventory." 
+      return res.status(400).json({
+        error: "An item with this exact name already exists in the inventory."
       });
     }
 
@@ -39,7 +41,8 @@ exports.addExtraItem = async (req, res) => {
 
 exports.updateExtraItem = async (req, res) => {
   try {
-    if (req.user.role !== "manager") {
+    const userRole = req.userRole || (req.user && req.user.role);
+    if (userRole !== "manager") {
       return res.status(403).json({ error: "Only manager allowed" });
     }
 
@@ -56,7 +59,8 @@ exports.updateExtraItem = async (req, res) => {
 
 exports.deleteExtraItem = async (req, res) => {
   try {
-    if (req.user.role !== "manager") {
+    const userRole = req.userRole || (req.user && req.user.role);
+    if (userRole !== "manager") {
       return res.status(403).json({ error: "Only manager allowed" });
     }
 
@@ -71,14 +75,15 @@ exports.deleteExtraItem = async (req, res) => {
 exports.getAllExtras = async (req, res) => {
   try {
     const days = [
-      "Sunday","Monday","Tuesday","Wednesday",
-      "Thursday","Friday","Saturday"
+      "Sunday", "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday"
     ];
 
     const today = days[new Date().getDay()];
     const currentMeal = getCurrentMeal();
 
-    if (req.user && req.user.role === "manager") {
+    const userRole = req.userRole || (req.user && req.user.role);
+    if (req.user && userRole === "manager") {
       const items = await ExtraItem.findAll();
       return res.json({
         day: today,
@@ -88,21 +93,7 @@ exports.getAllExtras = async (req, res) => {
     }
 
     const items = await ExtraItem.findAll({
-      where: {
-        isAvailable: true,
-        [Op.and]: [
-          {
-            day: {
-              [Op.or]: [today, "All"]
-            }
-          },
-          {
-            mealType: {
-              [Op.or]: [currentMeal, "All"]
-            }
-          }
-        ]
-      }
+      where: { isAvailable: true }
     });
 
     res.json({
@@ -118,7 +109,8 @@ exports.getAllExtras = async (req, res) => {
 
 exports.buyExtras = async (req, res) => {
   try {
-    if (req.user.role !== "student") {
+    const userRole = req.userRole || (req.user && req.user.role);
+    if (userRole !== "student") {
       return res.status(403).json({ error: "Only students allowed" });
     }
 
@@ -130,8 +122,8 @@ exports.buyExtras = async (req, res) => {
     }
 
     const days = [
-      "Sunday","Monday","Tuesday","Wednesday",
-      "Thursday","Friday","Saturday"
+      "Sunday", "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday"
     ];
 
     const today = days[new Date().getDay()];
@@ -148,70 +140,84 @@ exports.buyExtras = async (req, res) => {
     let totalAmount = 0;
     const purchases = [];
 
-    for (const item of items) {
-      const extra = await ExtraItem.findByPk(item.itemId);
+    const transaction = await ExtraItem.sequelize.transaction();
 
-      if (!extra) {
-        return res.status(404).json({
-          error: `Item not found`
+    try {
+      for (const item of items) {
+        const extra = await ExtraItem.findByPk(item.itemId, { transaction });
+
+        if (!extra) {
+          await transaction.rollback();
+          return res.status(404).json({
+            error: `Item not found`
+          });
+        }
+
+        if (!extra.isAvailable) {
+          await transaction.rollback();
+          return res.status(400).json({
+            error: `${extra.name} is not available`
+          });
+        }
+
+
+        if (!item.quantity || item.quantity <= 0) {
+          await transaction.rollback();
+          return res.status(400).json({
+            error: `Invalid quantity for ${extra.name}`
+          });
+        }
+
+        if (extra.stockQuantity < item.quantity) {
+          await transaction.rollback();
+          return res.status(400).json({
+            error: `Not enough stock for ${extra.name}`
+          });
+        }
+
+        const price = parseFloat(extra.price) * item.quantity;
+
+        extra.stockQuantity -= item.quantity;
+        await extra.save({ transaction });
+
+        const purchase = await ExtraPurchase.create({
+          StudentRollNo: studentId,
+          ExtraItemId: extra.id,
+          quantity: item.quantity,
+          totalPrice: price
+        }, { transaction });
+
+        await Transaction.create({
+          StudentRollNo: studentId,
+          itemName: extra.name,
+          amount: price,
+          type: 'extra',
+          status: 'Completed',
+          date: new Date()
+        }, { transaction });
+
+        totalAmount += price;
+
+        purchases.push({
+          itemName: extra.name,
+          quantity: item.quantity,
+          price: price
         });
       }
 
-      if (!extra.isAvailable) {
-        return res.status(400).json({
-          error: `${extra.name} is not available`
-        });
-      }
+      await transaction.commit();
 
-      if (
-        !(extra.day === "All" || extra.day === today) ||
-        !(extra.mealType === "All" || extra.mealType === currentMeal)
-      ) {
-        return res.status(400).json({
-          error: `${extra.name} not available for ${today} ${currentMeal}`
-        });
-      }
-
-      if (!item.quantity || item.quantity <= 0) {
-        return res.status(400).json({
-          error: `Invalid quantity for ${extra.name}`
-        });
-      }
-
-      if (extra.stockQuantity < item.quantity) {
-        return res.status(400).json({
-          error: `Not enough stock for ${extra.name}`
-        });
-      }
-
-      const price = parseFloat(extra.price) * item.quantity;
-
-      extra.stockQuantity -= item.quantity;
-      await extra.save();
-
-      const purchase = await ExtraPurchase.create({
-        StudentRollNo: studentId,
-        ExtraItemId: extra.id,
-        quantity: item.quantity,
-        totalPrice: price
+      res.json({
+        message: "Purchase successful",
+        day: today,
+        mealType: currentMeal,
+        totalAmount,
+        purchases
       });
-
-      totalAmount += price;
-
-      purchases.push({
-        itemName: extra.name,
-        quantity: item.quantity,
-        price: price
-      });
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
     }
-
-    res.json({
-      message: "Purchase successful",
-      day: today,
-      mealType: currentMeal,
-      totalAmount,
-      purchases
-    });
 
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -220,7 +226,8 @@ exports.buyExtras = async (req, res) => {
 
 exports.getMyExtras = async (req, res) => {
   try {
-    if (req.user.role !== "student") {
+    const userRole = req.userRole || (req.user && req.user.role);
+    if (userRole !== "student") {
       return res.status(403).json({ error: "Only students allowed" });
     }
 
@@ -247,11 +254,22 @@ exports.getMyExtras = async (req, res) => {
 
 exports.getExtrasAnalytics = async (req, res) => {
   try {
-    if (req.user.role !== "manager") {
+    const userRole = req.userRole || (req.user && req.user.role);
+    if (userRole !== "manager") {
       return res.status(403).json({ error: "Only manager allowed" });
     }
 
+    const { month, year } = req.query;
+    let where = {};
+
+    if (month && year) {
+      const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59, 999);
+      where.purchaseDate = { [Op.between]: [startDate, endDate] };
+    }
+
     const purchases = await ExtraPurchase.findAll({
+      where,
       include: [ExtraItem]
     });
 
@@ -279,6 +297,48 @@ exports.getExtrasAnalytics = async (req, res) => {
       items: itemStats
     });
 
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getPurchaseHistory = async (req, res) => {
+  try {
+    const userRole = req.userRole || (req.user && req.user.role);
+    if (userRole !== "manager") {
+      return res.status(403).json({ error: "Only manager allowed" });
+    }
+
+    const { month, year } = req.query;
+    let where = {};
+
+    if (month && year) {
+      const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59, 999);
+      where.purchaseDate = { [Op.between]: [startDate, endDate] };
+    }
+
+    const purchases = await ExtraPurchase.findAll({
+      where,
+      include: [
+        { model: ExtraItem, attributes: ["name", "price"] },
+        { model: Student, attributes: ["rollNo", "name"] }
+      ],
+      order: [["purchaseDate", "DESC"]]
+    });
+
+    const history = purchases.map(p => ({
+      id: p.id,
+      studentRollNo: p.Student ? p.Student.rollNo : p.StudentRollNo,
+      studentName: p.Student ? p.Student.name : "Unknown",
+      purchaseDate: p.purchaseDate,
+      itemName: p.ExtraItem ? p.ExtraItem.name : "Unknown",
+      itemPrice: p.ExtraItem ? parseFloat(p.ExtraItem.price) : 0,
+      quantity: p.quantity,
+      totalAmount: parseFloat(p.totalPrice)
+    }));
+
+    res.json({ history });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

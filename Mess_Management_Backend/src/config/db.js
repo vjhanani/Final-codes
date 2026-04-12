@@ -2,16 +2,24 @@
 
 const { Sequelize } = require("sequelize");
 
-const sequelize = new Sequelize(process.env.DB_URL, {
+if (!process.env.DB_URL) {
+  console.error("❌ CRITICAL ERROR: DB_URL is not defined in .env file");
+}
+
+const isLocalhost = process.env.DB_URL && (process.env.DB_URL.includes("localhost") || process.env.DB_URL.includes("127.0.0.1"));
+
+const sequelize = new Sequelize(process.env.DB_URL || "", {
   dialect: "postgres",
   protocol: "postgres",
   logging: false,
   dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false, // IMPORTANT for Supabase
-    },
+    ...(isLocalhost ? {} : {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    }),
   },
 });
 
-module.exports = sequelize;
+module.exports = sequelize;

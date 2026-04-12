@@ -16,6 +16,7 @@ interface Poll {
   startDate: string | null;
   endDate: string | null;
   PollOptions: PollOption[];
+  participantCount?: number;
 }
 
 export function PollManagement() {
@@ -218,7 +219,7 @@ export function PollManagement() {
                     {poll.endDate && <><span>•</span><span>Ended: {new Date(poll.endDate).toLocaleDateString()}</span></>}
                     <span className="flex items-center gap-1">
                       <BarChart3 className="w-4 h-4" />
-                      {totalVotes} votes
+                      {poll.participantCount !== undefined ? poll.participantCount : 0} {poll.participantCount === 1 ? 'person' : 'people'} voted
                     </span>
                   </div>
                 </div>

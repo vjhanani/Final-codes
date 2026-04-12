@@ -15,6 +15,7 @@ export function RequestRebate() {
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bdmr, setBdmr] = useState<number>(0);
 
   const [previousRequests, setPreviousRequests] = useState<RebateRequest[]>([]);
 
@@ -33,6 +34,22 @@ export function RequestRebate() {
       }
     };
     fetchRebates();
+
+    const fetchBDMR = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const date = new Date();
+        const configKey = `BDMR_${date.getFullYear()}_${date.getMonth() + 1}`;
+        const res = await fetch(`${API_HOST}/api/config/${configKey}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setBdmr(parseFloat(data.value) || 0);
+        }
+      } catch { /* Fail silently, bdmr remains 0 */ }
+    };
+    fetchBDMR();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -195,8 +212,8 @@ export function RequestRebate() {
               </p>
               <p className="text-sm text-green-800 mt-1">
                 <strong>Estimated Rebate:</strong> ₹
-                {(Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1) * 70}
-                {' '}(based on BDMR)
+                {(Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1) * bdmr}
+                {' '}(based on BDMR: ₹{bdmr}/day)
               </p>
             </div>
           )}

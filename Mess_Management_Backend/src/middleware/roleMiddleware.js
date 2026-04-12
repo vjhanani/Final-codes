@@ -3,18 +3,18 @@
 exports.allowRoles = (...roles) => {
   return (req, res, next) => {
     try {
-      if (!req.user || !req.user.role) {
-        return res.status(401).json({
-          error: "User not authenticated"
-        });
-      }
+      // Standardized role check (case-insensitive)
+      const finalUserRole = (req.userRole || (req.user && req.user.role) || "").toLowerCase();
+      const allowedRoles = roles.map(r => r.toLowerCase());
 
-      if (!roles.includes(req.user.role)) {
+      if (!allowedRoles.includes(finalUserRole)) {
+        console.log(`[ROLE] Access Denied. User Role: ${finalUserRole}, Allowed Roles: ${allowedRoles.join(", ")}`);
         return res.status(403).json({
-          error: "Access denied: insufficient permissions"
+          error: "Access denied! Found role: (" + finalUserRole + "). Expected one of: (" + roles.join(", ") + ")"
         });
       }
 
+      // console.log(`[ROLE] Access Granted. User Role: ${finalUserRole}`);
       next();
 
     } catch (err) {

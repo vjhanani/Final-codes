@@ -1,6 +1,6 @@
 const Rebate = require("../models/Rebate");
 const Student = require("../models/Student");
-const { Config } = require("../models/Index");
+const { Config, Transaction } = require("../models/Index");
 const { Op } = require("sequelize");
 
 const calculateAmount = async (startDate) => {
@@ -175,6 +175,15 @@ exports.approveRebate = async (req, res) => {
     rebate.status = "Approved";
     rebate.amount = amount;
     await rebate.save();
+
+    await Transaction.create({
+      StudentRollNo: rebate.StudentRollNo,
+      itemName: `Rebate (${rebate.startDate} to ${rebate.endDate})`,
+      amount: amount,
+      type: 'rebate',
+      status: 'Completed',
+      date: new Date()
+    });
 
     res.json({
       message: bdmr ? "Rebate approved" : "Rebate approved (Note: BDMR for this month was not set, amount is 0)",

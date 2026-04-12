@@ -1,6 +1,7 @@
 // controllers/menuController.js
 
 const Menu = require("../models/Menu");
+const sequelize = require("../config/db");
 
 exports.setWeeklyMenu = async (req, res) => {
   try {
@@ -23,22 +24,24 @@ exports.setWeeklyMenu = async (req, res) => {
     }
     */
 
-    // delete old menu
-    await Menu.destroy({ where: {} });
+    await sequelize.transaction(async (t) => {
+      // delete old menu
+      await Menu.destroy({ where: {}, transaction: t });
 
-    const entries = [];
+      const entries = [];
 
-    for (const day in weekMenu) {
-      for (const mealType in weekMenu[day]) {
-        entries.push({
-          day,
-          mealType,
-          items: weekMenu[day][mealType]
-        });
+      for (const day in weekMenu) {
+        for (const mealType in weekMenu[day]) {
+          entries.push({
+            day,
+            mealType,
+            items: weekMenu[day][mealType]
+          });
+        }
       }
-    }
 
-    await Menu.bulkCreate(entries);
+      await Menu.bulkCreate(entries, { transaction: t });
+    });
 
     res.json({ message: "Weekly menu set successfully" });
 
@@ -56,20 +59,22 @@ exports.updateDayMenu = async (req, res) => {
     const { day } = req.params;
     const { meals } = req.body;
 
-    // delete that day
-    await Menu.destroy({ where: { day } });
+    await sequelize.transaction(async (t) => {
+      // delete that day
+      await Menu.destroy({ where: { day }, transaction: t });
 
-    const entries = [];
+      const entries = [];
 
-    for (const mealType in meals) {
-      entries.push({
-        day,
-        mealType,
-        items: meals[mealType]
-      });
-    }
+      for (const mealType in meals) {
+        entries.push({
+          day,
+          mealType,
+          items: meals[mealType]
+        });
+      }
 
-    await Menu.bulkCreate(entries);
+      await Menu.bulkCreate(entries, { transaction: t });
+    });
 
     res.json({ message: `${day} menu updated` });
 

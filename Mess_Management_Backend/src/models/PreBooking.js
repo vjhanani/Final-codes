@@ -21,7 +21,7 @@ const PreBooking = sequelize.define("PreBooking", {
     allowNull: false,
   },
   status: {
-    type: DataTypes.ENUM('Pending', 'Fulfilled', 'Cancelled'),
+    type: DataTypes.ENUM('Pending', 'Approved', 'Rejected', 'Fulfilled', 'Cancelled'),
     defaultValue: 'Pending',
   }
 }, { timestamps: true });

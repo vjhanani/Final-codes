@@ -16,6 +16,7 @@ interface Poll {
   startDate: string | null;
   endDate: string | null;
   PollOptions: PollOption[];
+  participantCount?: number;
 }
 
 export function VotesSection() {
@@ -69,8 +70,8 @@ export function VotesSection() {
                   )}
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold">{totalVotes}</p>
-                  <p className="text-xs text-gray-600">Total Votes</p>
+                  <p className="text-2xl font-bold">{poll.participantCount || 0}</p>
+                  <p className="text-xs text-gray-600">People Voted</p>
                 </div>
               </div>
 

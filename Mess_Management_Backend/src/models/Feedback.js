@@ -17,6 +17,13 @@ const Feedback = sequelize.define('Feedback', {
     isAnonymous: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
+    },
+    status: {
+        type: DataTypes.ENUM('pending', 'reviewed', 'resolved'),
+        defaultValue: 'pending'
+    },
+    response: {
+        type: DataTypes.TEXT
     }
 }, { timestamps: true });
 

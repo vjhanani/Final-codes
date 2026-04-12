@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Coffee, UtensilsCrossed, Moon } from 'lucide-react';
+import { Coffee, UtensilsCrossed, Moon, Megaphone } from 'lucide-react';
 const API_HOST = import.meta.env.VITE_API_HOST || 'http://localhost:5000';
 export function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -10,6 +10,7 @@ export function Dashboard() {
   });
   const [extraTotal, setExtraTotal] = useState(0);
   const [bdmr, setBdmr] = useState<number | null>(null);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -73,9 +74,26 @@ export function Dashboard() {
       }
     };
 
+    const fetchAnnouncements = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await fetch(`${API_HOST}/api/announcement`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAnnouncements(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch announcements', err);
+      }
+    };
+
     fetchTodayMenu();
     fetchExtrasTotal();
     fetchBDMR();
+    fetchAnnouncements();
   }, []);
 
   const formatDate = (date: Date) => {
@@ -199,6 +217,30 @@ export function Dashboard() {
           <p className="text-5xl font-bold text-blue-600">{bdmr ? `₹${bdmr}/day` : 'Not Set'}</p>
         </div>
       </div>
+
+      {/* Announcements */}
+      <h2 className="text-2xl font-bold mb-6 mt-8 border-b-2 border-gray-800 text-gray-800 pb-3 flex items-center gap-2">
+        <Megaphone className="w-6 h-6" />
+        Latest Announcements
+      </h2>
+      <div className="space-y-4 pb-8">
+        {announcements.length === 0 ? (
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 text-center text-gray-500">
+            No active announcements at the moment.
+          </div>
+        ) : (
+          announcements.map((ann) => (
+            <div key={ann.id} className="bg-blue-50 border-l-4 border-blue-600 rounded-r-lg shadow-sm p-5">
+              <h3 className="font-bold text-lg text-gray-900">{ann.title}</h3>
+              <p className="text-xs text-blue-600 font-medium mb-3">
+                {formatDate(new Date(ann.createdAt))} at {formatTime(new Date(ann.createdAt))}
+              </p>
+              <p className="text-gray-800 whitespace-pre-wrap flex-1">{ann.content}</p>
+            </div>
+          ))
+        )}
+      </div>
+
     </div>
   );
 }

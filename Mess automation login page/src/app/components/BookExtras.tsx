@@ -195,8 +195,11 @@ export function BookExtras() {
     
     try {
       const token = localStorage.getItem('token');
+      let successCount = 0;
+      let errorMessages: string[] = [];
+
       for (const item of itemsToBook) {
-        await fetch(`${API_HOST}/api/pre-booking`, {
+        const res = await fetch(`${API_HOST}/api/pre-booking`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -205,17 +208,31 @@ export function BookExtras() {
           body: JSON.stringify({
             dishName: item.dishName,
             meal: item.meal,
-            date: item.date, // Use the date configured by manager
-            SpecialItemId: item.id
+            date: item.date,
+            SpecialItemId: parseInt(item.id)
           })
         });
+
+        if (res.ok) {
+          successCount++;
+        } else {
+          const errData = await res.json();
+          errorMessages.push(`${item.dishName}: ${errData.error || 'Failed'}`);
+        }
       }
 
-      alert(`Successfully placed ${itemsToBook.length} pre-bookings!`);
-      setPreBookings(prev => prev.map(item => ({ ...item, quantity: 0 })));
-      fetchMyBookings();
+      if (successCount > 0) {
+        alert(`Successfully placed ${successCount} pre-booking(s)!`);
+        setPreBookings(prev => prev.map(item => ({ ...item, quantity: 0 })));
+        await fetchMyBookings(); // Refresh UI to show confirmed status
+      }
+
+      if (errorMessages.length > 0) {
+        alert(`Errors encountered:\n${errorMessages.join('\n')}`);
+      }
+
     } catch (err) {
-      alert("Failed to connect to backend for pre-booking");
+      alert("Network error: Failed to connect to the server for pre-booking");
     }
   };
 

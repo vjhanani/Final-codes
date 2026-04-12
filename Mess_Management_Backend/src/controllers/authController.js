@@ -16,13 +16,82 @@ const generateToken = (user, role) => {
   );
 };
 
+const validatePassword = (password) => {
+  // Check for minimum 8 characters and contains at least one letter and one number
+  const regex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+  return regex.test(password);
+};
+
+const validateRoomNo = (roomNo) => {
+  // Only allow alphanumeric, hyphens, and spaces
+  const regex = /^[a-zA-Z0-9\s-]+$/;
+  return regex.test(roomNo);
+};
+
+const validateRollNo = (rollNo) => {
+  // Only allow alphanumeric
+  const regex = /^[a-zA-Z0-9]+$/;
+  return regex.test(rollNo);
+};
+
+const validatePhone = (phone) => {
+  // Check for exactly 10 digits
+  const regex = /^\d{10}$/;
+  return regex.test(phone);
+};
+
+const validateName = (name) => {
+  // Only allow letters and spaces
+  const regex = /^[a-zA-Z\s]+$/;
+  return regex.test(name);
+};
+
 exports.registerStudent = async (req, res) => {
   try {
     const { name, rollNo, email, password, roomNo, phone } = req.body;
 
+    if (!phone || !/^\d{10}$/.test(phone)) {
+      return res.status(400).json({ error: "Invalid phone number (must be 10 digits)" });
+    }
+
     // optional IITK validation
     if (!email.endsWith("@iitk.ac.in")) {
       return res.status(400).json({ error: "Use IITK email" });
+    }
+
+    // Password validation
+    if (!validatePassword(password)) {
+      return res.status(400).json({ 
+        error: "Password must be at least 8 characters long and contain both letters and numbers." 
+      });
+    }
+
+    // Name validation
+    if (!validateName(name)) {
+      return res.status(400).json({ 
+        error: "Invalid name. Use only letters and spaces." 
+      });
+    }
+
+    // Roll Number validation
+    if (!validateRollNo(rollNo)) {
+      return res.status(400).json({ 
+        error: "Invalid Roll Number. Only alphanumeric characters are allowed." 
+      });
+    }
+
+    // Room Number validation
+    if (!validateRoomNo(roomNo)) {
+      return res.status(400).json({ 
+        error: "Invalid room number format. Only alphanumeric characters, hyphens, and spaces are allowed." 
+      });
+    }
+
+    // Phone validation
+    if (!validatePhone(phone)) {
+      return res.status(400).json({ 
+        error: "Phone number must be exactly 10 digits." 
+      });
     }
 
     const existing = await Student.findOne({ where: { email } });
@@ -253,6 +322,12 @@ exports.changePassword = async (req, res) => {
       return res.status(400).json({ error: "Old password incorrect" });
     }
 
+    if (!validatePassword(newPassword)) {
+      return res.status(400).json({ 
+        error: "Password must be at least 8 characters long and contain both letters and numbers." 
+      });
+    }
+
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
@@ -295,7 +370,12 @@ exports.updateProfile = async (req, res) => {
 
     if (name) student.name = name;
     if (roomNo !== undefined) student.roomNo = roomNo;
-    if (phone !== undefined) student.phone = phone;
+    if (phone !== undefined) {
+      if (!/^\d{10}$/.test(phone)) {
+        return res.status(400).json({ error: "Invalid phone number (must be 10 digits)" });
+      }
+      student.phone = phone;
+    }
 
     await student.save();
 
@@ -361,6 +441,12 @@ exports.resetPassword = async (req, res) => {
 
     if (record.otp != otp) {
       return res.status(400).json({ error: "Invalid OTP" });
+    }
+
+    if (!validatePassword(newPassword)) {
+      return res.status(400).json({ 
+        error: "Password must be at least 8 characters long and contain both letters and numbers." 
+      });
     }
 
     // Hash the new password

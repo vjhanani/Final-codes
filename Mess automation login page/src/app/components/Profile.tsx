@@ -61,8 +61,11 @@ export function Profile() {
     };
     fetchProfile();
   }, []);
-
   const handleSaveProfile = async () => {
+    if (!editData.name.trim()) {
+      alert("Name cannot be empty");
+      return;
+    }
     try {
       setIsSaving(true);
       const token = localStorage.getItem('token');

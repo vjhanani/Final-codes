@@ -22,19 +22,28 @@ export function Vote() {
   const [polls, setPolls] = useState<PollData[]>([]);
   const [selections, setSelections] = useState<Record<number, Record<string, number>>>({});
   const [votedPolls, setVotedPolls] = useState<Set<number>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPolls = async () => {
       try {
+        setLoading(true);
         const token = localStorage.getItem('token');
         if (!token) return;
         
         const res = await fetch(`${API_HOST}/api/poll`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (!res.ok) return;
+        if (!res.ok) throw new Error("Failed to fetch polls");
         
-        const pollsData = await res.json();
+        const rawPolls = await res.json();
+        // Standardize PollOptions casing just in case backend returns it differently
+        const pollsData = rawPolls.map((p: any) => ({
+          ...p,
+          PollOptions: p.PollOptions || p.pollOptions || p.poll_options || []
+        }));
+        
         setPolls(pollsData);
 
         const myRes = await fetch(`${API_HOST}/api/poll/my`, {
@@ -63,9 +72,10 @@ export function Vote() {
           setSelections(initialSelections);
           setVotedPolls(initialVoted);
         }
-
-      } catch (err) {
-        console.error('Failed to fetch polls', err);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
     };
     fetchPolls();
@@ -138,6 +148,24 @@ export function Vote() {
         <h2 className="text-2xl font-bold text-gray-800">Menu Voting System</h2>
         <p className="text-sm mt-2 text-gray-600">Select one option per meal (Breakfast, Lunch, Dinner) and submit your vote!</p>
       </div>
+
+      {loading && (
+        <div className="bg-white border p-12 rounded-lg text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-gray-800 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Fetching active polls...</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 p-6 rounded-lg text-red-700 text-center">
+          <p className="font-bold">Error loading polls</p>
+          <p className="text-sm mt-1">{error}</p>
+          <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Retry</button>
+        </div>
+      )}
+
+      {!loading && !error && (
+        <>
 
       {/* Active Polls */}
       {activePolls.length > 0 && (
@@ -257,7 +285,10 @@ export function Vote() {
         </div>
       )}
 
-      {polls.length === 0 && (
+        </>
+      )}
+
+      {!loading && polls.length === 0 && (
         <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-400">No polls available</div>
       )}
     </div>

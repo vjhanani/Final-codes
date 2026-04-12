@@ -15,5 +15,6 @@ router.get("/my", protect, allowRoles("student"), feedbackController.getMyFeedba
 router.get("/", protect, allowRoles("manager"), feedbackController.getAllFeedback);
 router.get("/category/:category", protect, allowRoles("manager"), feedbackController.getFeedbackByCategory);
 router.get("/stats", protect, allowRoles("manager"), feedbackController.getFeedbackStats);
+router.put("/:id/status", protect, allowRoles("manager"), feedbackController.updateFeedbackStatus);
 
 module.exports = router;
