@@ -7,8 +7,14 @@ exports.createSpecialItem = async (req, res) => {
     }
 
     const { name, price, meal, date } = req.body;
-    if (!name || !price || !meal || !date) {
+
+    if (!name || price === undefined || price === null || !meal || !date) {
       return res.status(400).json({ error: "All fields are required" });
+    }
+
+    const numericPrice = Number(price);
+    if (isNaN(numericPrice) || numericPrice < 0) {
+      return res.status(400).json({ error: "Price must be a valid number greater than or equal to 0" });
     }
 
     const item = await SpecialItem.create({ name, price, meal, date });
