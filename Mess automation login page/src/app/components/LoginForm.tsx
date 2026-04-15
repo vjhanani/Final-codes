@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import Webcam from 'react-webcam';
 const API_HOST = import.meta.env.VITE_API_HOST || 'http://localhost:5000';
-const logo = "https://upload.wikimedia.org/wikipedia/en/thumb/a/a3/IIT_Kanpur_Logo.svg/120px-IIT_Kanpur_Logo.svg.png";
-const campusImage = "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=1000&auto=format&fit=crop";
-
+import logo from "../../assets/IIT_Kanpur_Logo.svg.png";
+import campusImage from "../../assets/photo-1541339907198-e08756dedf3f.avif";
 export function LoginForm() {
   const navigate = useNavigate();
   const webcamRef = useRef<Webcam>(null); 
