@@ -210,7 +210,7 @@ exports.login = async (req, res) => {
       return res.status(400).json({ error: "User not found" });
     }
 
-    const isMatch = role=== "student" ? await bcrypt.compare(password, user.password) : password === user.password;
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.status(400).json({ error: "Invalid credentials" });

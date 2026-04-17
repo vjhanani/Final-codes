@@ -10,6 +10,7 @@ import {
   FileText,
   CheckCircle,
   UserPlus,
+  Settings,
   LogOut
 } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
@@ -22,6 +23,7 @@ import { MenuManagement } from '../components/MenuManagement';
 import { PollManagement } from '../components/PollManagement';
 import { NewPersonRequests } from '../components/NewPersonRequests';
 import { AnnouncementManagement } from '../components/AnnouncementManagement';
+import { ManagerSettings } from '../components/ManagerSettings';
 
 export default function ManagerDashboard() {
   const navigate = useNavigate();
@@ -57,6 +59,7 @@ export default function ManagerDashboard() {
     { id: 'menu', label: 'Menu Management', icon: Calendar },
     { id: 'polls', label: 'Poll Management', icon: BarChart3 },
     { id: 'announcements', label: 'Announcements', icon: MessageSquare },
+    { id: 'settings', label: 'Account Settings', icon: Settings },
   ];
 
   const renderContent = () => {
@@ -79,6 +82,8 @@ export default function ManagerDashboard() {
         return <PollManagement />;
       case 'announcements':
         return <AnnouncementManagement />;
+      case 'settings':
+        return <ManagerSettings />;
       case 'dashboard':
       default:
         return <DashboardOverview onNavigate={setActiveSection} />;
