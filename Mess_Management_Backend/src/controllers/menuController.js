@@ -3,6 +3,35 @@
 const Menu = require("../models/Menu");
 const sequelize = require("../config/db");
 
+const VALID_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const VALID_MEALS = ["Breakfast", "Lunch", "Dinner"];
+
+/**
+ * Validates a meals object for a single day.
+ * Ensures all required meals are present and have at least one item.
+ */
+const validateDayMeals = (meals) => {
+  if (!meals || typeof meals !== "object") {
+    throw new Error("Meals data must be an object");
+  }
+
+  for (const mealType of VALID_MEALS) {
+    if (!meals[mealType]) {
+      throw new Error(`Missing meal type: ${mealType}`);
+    }
+    if (!Array.isArray(meals[mealType]) || meals[mealType].length === 0) {
+      throw new Error(`Meal type ${mealType} must have at least one item`);
+    }
+  }
+
+  // Check for invalid meal types
+  for (const key in meals) {
+    if (!VALID_MEALS.includes(key)) {
+      throw new Error(`Invalid meal type: ${key}`);
+    }
+  }
+};
+
 exports.setWeeklyMenu = async (req, res) => {
   try {
     if (req.user.role !== "manager") {
@@ -11,18 +40,21 @@ exports.setWeeklyMenu = async (req, res) => {
 
     const { weekMenu } = req.body;
 
-    /*
-    weekMenu format:
-
-    {
-      "Monday": {
-        "Breakfast": ["Poha","Tea"],
-        "Lunch": ["Rice","Dal"],
-        "Dinner": ["Roti","Paneer"]
-      },
-      ...
+    // --- Validation ---
+    if (!weekMenu || typeof weekMenu !== "object") {
+      return res.status(400).json({ error: "weekMenu must be an object" });
     }
-    */
+
+    try {
+      for (const day of VALID_DAYS) {
+        if (!weekMenu[day]) {
+          throw new Error(`Missing menu for day: ${day}`);
+        }
+        validateDayMeals(weekMenu[day]);
+      }
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
 
     await sequelize.transaction(async (t) => {
       // delete old menu
@@ -58,6 +90,17 @@ exports.updateDayMenu = async (req, res) => {
 
     const { day } = req.params;
     const { meals } = req.body;
+
+    // --- Validation ---
+    if (!VALID_DAYS.includes(day)) {
+      return res.status(400).json({ error: "Invalid day" });
+    }
+
+    try {
+      validateDayMeals(meals);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
 
     await sequelize.transaction(async (t) => {
       // delete that day

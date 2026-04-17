@@ -35,7 +35,8 @@ exports.protect = async (req, res, next) => {
         return res.status(401).json({ error: "User not found" });
       }
 
-      if (user.messCardStatus === "Suspended") {
+      const isSuspended = user.messCardStatus && user.messCardStatus.toLowerCase() === "suspended";
+      if (isSuspended) {
         return res.status(403).json({ error: "Your account is currently suspended from accessing mess facilities." });
       }
 

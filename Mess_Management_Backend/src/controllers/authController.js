@@ -48,7 +48,8 @@ const validateName = (name) => {
 
 exports.registerStudent = async (req, res) => {
   try {
-    const { name, rollNo, email, password, roomNo, phone } = req.body;
+    let { name, rollNo, email, password, roomNo, phone } = req.body;
+    if (email) email = email.toLowerCase();
 
     if (!phone || !/^\d{10}$/.test(phone)) {
       return res.status(400).json({ error: "Invalid phone number (must be 10 digits)" });
@@ -94,11 +95,21 @@ exports.registerStudent = async (req, res) => {
       });
     }
 
-    const existing = await Student.findOne({ where: { email } });
-    if (existing && existing.status !== "Rejected") {
-      return res.status(400).json({ error: "Student already exists" });
-    }else if (existing && existing.status === "Rejected") {
-      await existing.destroy(); // allow re-registration if previously rejected
+    const { Op } = require('sequelize');
+    const existing = await Student.findOne({ 
+      where: { 
+        [Op.or]: [{ email }, { rollNo }] 
+      } 
+    });
+
+    if (existing) {
+      if (existing.status && existing.status.toLowerCase() === "rejected") {
+        await existing.destroy(); // allow re-registration if previously rejected
+      } else if (existing.messCardStatus && existing.messCardStatus.toLowerCase() === "suspended") {
+        return res.status(400).json({ error: "This student account is suspended." });
+      } else {
+        return res.status(400).json({ error: "Student already exists with this email or roll number." });
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -122,7 +133,8 @@ exports.registerStudent = async (req, res) => {
 
 exports.verifyOTP = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    let { email, otp } = req.body;
+    if (email) email = email.toLowerCase();
 
     const record = otpStore[email];
 
@@ -158,7 +170,8 @@ exports.verifyOTP = async (req, res) => {
 
 exports.resendOTP = async (req, res) => {
   try {
-    const { email } = req.body;
+    let { email } = req.body;
+    if (email) email = email.toLowerCase();
 
     const record = otpStore[email];
 
@@ -182,7 +195,8 @@ exports.resendOTP = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    let { email, password, role } = req.body;
+    if (email) email = email.toLowerCase();
 
     let user;
 
@@ -203,17 +217,31 @@ exports.login = async (req, res) => {
     }
 
     if (role === "student") {
-      if (user.status === "Pending") {
+      console.log(`[LOGIN DEBUG] Student find results: rollNo=${user.rollNo}, email=${user.email}, status=${user.status}, messCardStatus=${user.messCardStatus}`);
+
+      if (user.status && user.status.toLowerCase() === "pending") {
+        console.log(`[LOGIN BLOCKED] Reason: Pending approval`);
         return res.status(403).json({
           error: "Your account is pending approval by manager"
         });
       }
 
-      if (user.status === "Rejected") {
+      if (user.status && user.status.toLowerCase() === "rejected") {
+        console.log(`[LOGIN BLOCKED] Reason: Rejected status`);
         return res.status(403).json({
           error: "Your account has been rejected"
         });
       }
+
+      const isSuspended = user.messCardStatus && user.messCardStatus.toLowerCase() === "suspended";
+      if (isSuspended) {
+        console.log(`[LOGIN BLOCKED] Reason: Suspended mess status`);
+        return res.status(403).json({
+          error: "Your account is currently suspended from accessing mess facilities."
+        });
+      }
+      
+      console.log(`[LOGIN GRANTED] Student ${user.rollNo} is entering the system.`);
     }
 
     const token = generateToken(user, role);
@@ -238,7 +266,7 @@ exports.loginFace = async (req, res) => {
     // Fetch all students who have a face photo registered
     const students = await Student.findAll({
         where: { facePhoto: { [require('sequelize').Op.ne]: null } },
-        attributes: ['rollNo', 'facePhoto', 'name', 'status']
+        attributes: ['rollNo', 'facePhoto', 'name', 'email', 'status', 'messCardStatus']
     });
 
     if (students.length === 0) {
@@ -264,11 +292,18 @@ exports.loginFace = async (req, res) => {
             return res.status(400).json({ error: "Face recognized, but student record moved. Please login manually." });
         }
 
-        if (user.status === "Pending") {
+        console.log(`[FACE LOGIN] Recognized student: ${user.rollNo}. status: ${user.status}, messCardStatus: ${user.messCardStatus}`);
+
+        if (user.status && user.status.toLowerCase() === "pending") {
             return res.status(403).json({ error: "Your account is pending approval by manager" });
         }
-        if (user.status === "Rejected") {
+        if (user.status && user.status.toLowerCase() === "rejected") {
             return res.status(403).json({ error: "Your account has been rejected" });
+        }
+        
+        const isSuspended = user.messCardStatus && user.messCardStatus.toLowerCase() === "suspended";
+        if (isSuspended) {
+            return res.status(403).json({ error: "Your account is currently suspended from accessing mess facilities." });
         }
 
         const token = generateToken(user, "student");
@@ -388,7 +423,8 @@ exports.updateProfile = async (req, res) => {
 // 1. Request Password Reset OTP
 exports.forgotPassword = async (req, res) => {
   try {
-    const { email, role } = req.body;
+    let { email, role } = req.body;
+    if (email) email = email.toLowerCase();
     let user;
 
     // Check if user exists based on role
@@ -425,7 +461,8 @@ exports.forgotPassword = async (req, res) => {
 // 2. Reset Password using OTP
 exports.resetPassword = async (req, res) => {
   try {
-    const { email, otp, newPassword } = req.body;
+    let { email, otp, newPassword } = req.body;
+    if (email) email = email.toLowerCase();
 
     const record = otpStore[email];
 

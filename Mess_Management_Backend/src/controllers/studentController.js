@@ -151,9 +151,21 @@ exports.toggleMessStatus = async (req, res) => {
     }
 
     // Toggle between Active and Suspended
-    student.messCardStatus = student.messCardStatus === "Active" ? "Suspended" : "Active";
+    console.log(`[TOGGLE STATUS] Student ${student.rollNo} Current: messCardStatus=${student.messCardStatus}, status=${student.status}`);
+    
+    const currentMessStatus = (student.messCardStatus || "").toLowerCase();
+    
+    if (currentMessStatus === "active") {
+      student.messCardStatus = "Suspended";
+      // We don't necessarily change status to Rejected here, just suspend mess access
+    } else {
+      student.messCardStatus = "Active";
+      // Force account to Approved if we are activating their mess access
+      student.status = "Approved"; 
+    }
     
     await student.save();
+    console.log(`[TOGGLE STATUS] Student ${student.rollNo} New: messCardStatus=${student.messCardStatus}, status=${student.status}`);
 
     res.json({
       message: `Status updated to ${student.messCardStatus}`,
