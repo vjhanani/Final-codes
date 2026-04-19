@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Coffee, UtensilsCrossed, Moon, Megaphone } from 'lucide-react';
-import campusImg from '../../assets/IITK Library.jpeg';
+import campusImg from '../../assets/IITK LIBRARY2.jpeg';
 const API_HOST = import.meta.env.VITE_API_HOST || 'http://localhost:5000';
 export function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
